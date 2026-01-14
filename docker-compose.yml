@@ -1,42 +1,29 @@
 script: |
-  set -e
+  set -e  # 遇到错误立即停止
 
-  # 1. 进入项目目录（确保路径绝对正确）
-  PROJECT_DIR="/home/ubuntu/zero-chat"
-  mkdir -p $PROJECT_DIR
-  cd $PROJECT_DIR
+  # 1. 确保目录存在并进入
+  mkdir -p /home/ubuntu/zero-chat
+  cd /home/ubuntu/zero-chat
 
-  # 2. 强力初始化和同步
-  echo ">>> [STEP 1/3] 正在建立 Git 关联..."
+  # 2. 强力同步代码 (核心修改)
   if [ ! -d ".git" ]; then
+    echo ">>> 正在初始化 Git 并关联远程仓库..."
     git init
-    # 使用 https 地址（如果是私有仓库建议通过 SSH 连结，目前假设是公共或已授权）
-    git remote add origin https://github.com/${{ github.repository }}.git || true
-  else
-    # 确保 remote 地址是最新的
-    git remote set-url origin https://github.com/${{ github.repository }}.git
+    git remote add origin https://github.com/${{ github.repository }}.git
   fi
 
-  echo ">>> [STEP 2/3] 正在强制拉取 GitHub 最新代码..."
-  # --force 确保强制覆盖，--prune 清理掉远程已删除的分支
-  git fetch --all --force
-  # 放弃服务器上所有未提交的改动，强制对齐 main 分支
+  echo ">>> 正在强制对齐 GitHub 最新代码..."
+  git fetch origin main
+  # reset --hard 会强制把 GitHub 的文件“盖”在当前目录上，不会报“目录非空”的错
   git reset --hard origin/main
 
-  # 3. 核心验证：列出文件列表，让你在 GitHub 日志里能看到
-  echo ">>> [VERIFY] 验证代码是否拉取成功。当前目录文件列表："
-  ls -F
+  # 3. 验证文件
+  echo ">>> 检查同步结果 (ls -al):"
+  ls -al
 
-  if [ ! -f "docker-compose.yml" ]; then
-    echo "!!! 致命错误：代码拉取失败，未发现 docker-compose.yml"
-    exit 1
-  fi
-
-  # 4. 执行部署
-  echo ">>> [STEP 3/3] 正在启动 Docker 容器..."
-  # 确保使用 sudo
+  # 4. 部署容器
+  echo ">>> 正在启动 Docker 容器集群..."
   sudo docker-compose up --build -d
 
-  # 5. 最终检查
-  echo ">>> 部署任务结束。当前正在运行的服务："
-  sudo docker ps
+  # 5. 清理镜像
+  sudo docker image prune -f
