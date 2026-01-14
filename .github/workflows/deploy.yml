@@ -28,7 +28,7 @@ jobs:
             else
               git pull origin main
             fi
-
+            # 加个测试
             # 3. 执行 Docker Compose 部署
             # --build: 强制重新构建 app 镜像 (保证代码更新)
             # -d: 后台运行
