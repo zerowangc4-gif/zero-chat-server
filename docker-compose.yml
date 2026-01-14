@@ -1,34 +1,27 @@
 script: |
-  # 开启详细模式，打印每一行执行的命令
+  # 1. 开启“报错即停止”和“命令回显”模式
+  set -e
   set -x
 
-  PROJECT_DIR="/home/ubuntu/zero-chat"
-  mkdir -p $PROJECT_DIR
-  cd $PROJECT_DIR
+  # 2. 强制进入正确目录
+  cd /home/ubuntu/zero-chat
 
-  echo ">>> 1. 检查当前环境"
-  git --version || echo "Git 未安装"
-  docker-compose --version || echo "Docker Compose 未安装"
-
-  echo ">>> 2. 强制同步代码"
-  # 如果没有 .git 文件夹则初始化
-  [ ! -d ".git" ] && git init
-
-  # 重新关联远程仓库（确保地址动态更新）
-  git remote remove origin || true
+  # 3. 彻底重置 Git 环境（防止之前的错误状态残留）
+  rm -rf .git  # 删掉旧的 git 记录，从头再来
+  git init
   git remote add origin https://github.com/${{ github.repository }}.git
 
-  # 尝试拉取，如果 main 不行就试 master
-  echo ">>> 正在拉取..."
-  git fetch origin
-  git reset --hard origin/main || git reset --hard origin/master
+  echo ">>> 正在执行暴力同步..."
+  # 这一步如果拉不下来，CI 绝对会变红报错，不会再给你绿灯
+  git fetch --all --depth=1
+  git reset --hard origin/main
 
-  echo ">>> 3. 验证目录内容"
-  ls -al
+  echo ">>> 严重检查：同步后的文件清单"
+  ls -al  # 如果这里还没看到 docker-compose.yml，说明 GitHub 连不上你的服务器
 
-  echo ">>> 4. 尝试启动 Docker"
-  # 这里不加 -d，如果有报错会直接显示在 GitHub 日志里
-  sudo docker-compose up --build -d || (echo "Docker 启动失败" && exit 1)
+  echo ">>> 正在尝试启动 Docker"
+  # 不加 -d 运行 10 秒看报错，然后再转后台
+  sudo docker-compose up --build -d
 
-  echo ">>> 5. 最终容器状态"
+  echo ">>> 部署最终检查"
   sudo docker ps -a
