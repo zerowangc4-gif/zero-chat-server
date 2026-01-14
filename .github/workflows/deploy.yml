@@ -2,7 +2,7 @@ name: Docker Production Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [main] # 确保你的默认分支确实叫 main
 
 jobs:
   deploy:
@@ -19,40 +19,48 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            # 1. 严格错误检查
+            # 1. 开启报错即停止模式
             set -e
 
-            # 2. 确保目录存在并进入
+            # 2. 定位并准备目录
             PROJECT_DIR="/home/ubuntu/zero-chat"
+            echo ">>> [准备] 目标目录: $PROJECT_DIR"
             sudo mkdir -p $PROJECT_DIR
             sudo chown -R ${{ secrets.SERVER_USER }}:${{ secrets.SERVER_USER }} $PROJECT_DIR
             cd $PROJECT_DIR
 
+            # 3. 核心代码同步逻辑：强制对齐远程仓库
             echo ">>> [1/4] 正在拉取代码..."
 
-            # 3. 智能同步：如果是新目录就初始化，如果是旧目录就强制覆盖
+            # 初始化 Git（如果目录还不是 git 仓库）
             if [ ! -d ".git" ]; then
               git init
-              git remote add origin https://github.com/${{ github.repository }}.git
             fi
 
-            # 强制从 main 分支对齐代码
+            # 强行重置远程关联，防止报错 "origin already exists" 或关联错误
+            git remote remove origin || true
+            git remote add origin https://github.com/zerowangc4-gif/zero-chat-server.git
+
+            # 强制抓取并覆盖本地（解决所有文件冲突）
             git fetch origin main --depth=1
             git reset --hard origin/main
 
-            # 4. 关键验证：确保 docker-compose.yml 真的躺在这里了
+            # 4. 关键文件物理检查
+            echo ">>> [2/4] 验证部署环境..."
             if [ ! -f "docker-compose.yml" ]; then
-              echo "❌ 错误：未发现 docker-compose.yml，请检查项目根目录！"
+              echo "❌ 致命错误：在 $PROJECT_DIR 下未找到 docker-compose.yml"
+              ls -al
               exit 1
             fi
 
-            echo ">>> [2/4] 正在构建并启动容器..."
-            # 5. 执行部署
-            # --remove-orphans 清理过时容器
+            # 5. 重启 Docker 容器
+            echo ">>> [3/4] 正在启动 Docker 服务..."
+            # 停止可能存在的旧容器，并重新构建启动
             sudo docker-compose up --build -d --remove-orphans
 
-            echo ">>> [3/4] 正在清理过期镜像..."
+            # 6. 清理冗余
+            echo ">>> [4/4] 正在清理虚悬镜像..."
             sudo docker image prune -f
 
-            echo ">>> [4/4] 部署成功！当前运行状态："
+            echo ">>> [部署完成] 最终状态如下："
             sudo docker ps
