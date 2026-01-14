@@ -1,0 +1,48 @@
+{
+  "name": "zero-chat-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "nodemon --exec ts-node -r tsconfig-paths/register index.ts",
+    "build": "tsc && tsc-alias",
+    "start": "node dist/index.js",
+    "lint": "eslint . --ext .ts"
+  },
+  "_moduleAliases": {
+    "@": "dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zerowangc4-gif/zero-chat-server.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zerowangc4-gif/zero-chat-server/issues"
+  },
+  "homepage": "https://github.com/zerowangc4-gif/zero-chat-server#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "module-alias": "^2.2.3",
+    "mysql2": "^3.16.0",
+    "redis": "^5.10.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/module-alias": "^2.0.4",
+    "@types/node": "^25.0.8",
+    "@typescript-eslint/eslint-plugin": "^8.53.0",
+    "@typescript-eslint/parser": "^8.53.0",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "nodemon": "^3.1.11",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.3"
+  }
+}
