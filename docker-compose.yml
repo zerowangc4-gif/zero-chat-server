@@ -23,7 +23,6 @@ services:
     networks:
       - zero-network
 
-  # --- 修改这里：服务名改为 zero-chat-app ---
   zero-chat-app:
     build: .
     container_name: zero-chat-app
