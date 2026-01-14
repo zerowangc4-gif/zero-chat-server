@@ -11,6 +11,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 1. 这一步是在 GitHub 自己的服务器上运行，网络绝对没问题
+      # 我们直接把代码物理搬运到你的服务器，不走 git clone
+      - name: Copy files via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "./*"
+          target: "/home/ubuntu/zero-chat"
+          rm: true # 每次传输前清空目标文件夹，确保干净
+
+      # 2. 文件搬过去后，只让服务器执行启动命令
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -18,50 +32,21 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          # 增加超时时间，防止下载大镜像时断开
-          command_timeout: 30m
           script: |
-            # 1. 严格错误检查
             set -e
+            cd /home/ubuntu/zero-chat
 
-            # 2. 准备目录并修正权限
-            PROJECT_DIR="/home/ubuntu/zero-chat"
-            sudo mkdir -p $PROJECT_DIR
-            sudo chown -R ${{ secrets.SERVER_USER }}:${{ secrets.SERVER_USER }} $PROJECT_DIR
-            cd $PROJECT_DIR
-
-            # 3. 解决网络问题：使用加速代理拉取代码
-            echo ">>> [1/4] 正在拉取代码 (使用加速代理绕过网络限制)..."
-            [ -d ".git" ] || git init
-            git remote remove origin || true
-            # 使用国内可访问的镜像代理
-            git remote add origin https://mirror.ghproxy.com/https://github.com/zerowangc4-gif/zero-chat-server.git
-
-            # 尝试拉取，如果失败会重试一次
-            git fetch origin main --depth=1 || (sleep 5 && git fetch origin main --depth=1)
-            git reset --hard origin/main
-
-            # 4. 解决 Dockerfile 缺失问题：自动兜底
-            echo ">>> [2/4] 验证部署环境..."
+            # 自动兜底 Dockerfile，防止你本地没上传
             if [ ! -f "Dockerfile" ]; then
-              echo "⚠️ 检测到缺失 Dockerfile，正在为您生成临时运行环境..."
-              # 生成一个基础的 Node 运行环境（你可以根据需要修改这里）
               cat <<EOF > Dockerfile
             FROM node:18-alpine
             WORKDIR /app
             COPY . .
-            # 如果你有 package.json 就安装，没有就跳过
-            RUN [ -f package.json ] && npm install --production || echo "No package.json found"
-            EXPOSE 3000
+            RUN [ -f package.json ] && npm install --production || echo "No package.json"
             CMD ["npm", "start"]
             EOF
             fi
 
-            # 5. 重启 Docker 服务
-            echo ">>> [3/4] 正在启动 Docker 容器..."
-            # --quiet-pull 减少无效日志输出，防止 SSH 缓冲区溢出
+            echo ">>> 正在启动 Docker..."
             sudo docker-compose up --build -d --remove-orphans
-
-            # 6. 最终状态汇报
-            echo ">>> [4/4] 部署完成！"
             sudo docker ps
