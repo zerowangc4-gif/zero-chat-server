@@ -2,20 +2,22 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# 1. 安装 PM2
-RUN npm install pm2 -g
+# 安装 PM2 和 编译工具
+RUN npm install pm2 -g && npm install typescript tsc-alias -g
 
-# 2. 安装依赖
+# 拷贝依赖配置
 COPY package*.json ./
+
+# 安装所有依赖
 RUN npm install
 
-# 3. 拷贝源码并编译 (这一步绝对不能少，否则没 dist 文件夹)
+# 拷贝源码
 COPY . .
+
+# 【关键点】如果本地 npm run build 还是报错，可以尝试直接运行编译指令
 RUN npm run build
 
-# 4. 暴露端口
 EXPOSE 3000
 
-# 5. 使用 pm2-runtime 启动 (注意：必须用 pm2-runtime，不能用 pm2 start)
-# 这样进程才会在前台运行，容器才不会退出
+# 启动 (使用 pm2-runtime)
 CMD ["pm2-runtime", "start", "dist/index.js", "--name", "zero-chat-api"]
