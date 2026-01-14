@@ -1,27 +1,44 @@
-script: |
-  # 1. 进入目录并打印当前绝对路径（确保我们没走错房间）
-  cd /home/ubuntu/zero-chat
-  echo "--- [CHECK 1] 当前绝对路径: $(pwd) ---"
+name: Docker Production Deploy
 
-  # 2. 强制清理并重新拉取（抛弃所有缓存和干扰）
-  echo "--- [CHECK 2] 开始强制清理 Git 状态 ---"
-  sudo rm -rf .git
-  git init
-  git remote add origin https://github.com/${{ github.repository }}.git
+on:
+  push:
+    branches: [main]
 
-  echo "--- [CHECK 3] 正在拉取代码... ---"
-  # 这一步如果失败，脚本会报错
-  git fetch origin main --depth=1
-  git reset --hard origin/main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  echo "--- [CHECK 4] 拉取后的文件清单 (必须有 docker-compose.yml) ---"
-  ls -al
+      # 1. 直接通过 SCP 把本地代码物理拷贝到服务器（不再依赖 git clone）
+      - name: Copy files via ssh
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "./*"
+          target: "/home/ubuntu/zero-chat"
 
-  # 3. 强制重启 Docker
-  echo "--- [CHECK 5] 正在执行 Docker 重启 ---"
-  # 这里如果不成功，会显示具体错误（如端口占用、yml 语法错误）
-  sudo docker-compose down || true
-  sudo docker-compose up --build -d
+      # 2. 拷贝完后，只在服务器执行启动命令
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            cd /home/ubuntu/zero-chat
+            echo "--- 检查物理拷贝结果 ---"
+            ls -al
 
-  echo "--- [CHECK 6] 最终运行中的容器 ---"
-  sudo docker ps
+            echo "--- 正在启动容器 ---"
+            # 强制停止旧容器并删除，重新构建启动
+            sudo docker-compose down || true
+            sudo docker-compose up --build -d
+
+            echo "--- 最终状态 ---"
+            sudo docker ps
