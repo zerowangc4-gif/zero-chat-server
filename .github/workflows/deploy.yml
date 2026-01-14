@@ -1,0 +1,39 @@
+name: Docker Production Deploy
+
+on:
+  push:
+    branches: [main] # 只有 main 分支推送时触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            # 1. 进入项目目录
+            cd /home/ubuntu/zero-chat
+
+            # 2. 拉取最新代码 (如果没初始化则克隆)
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/${{ github.repository }}.git .
+            else
+              git pull origin main
+            fi
+
+            # 3. 执行 Docker Compose 部署
+            # --build: 强制重新构建 app 镜像 (保证代码更新)
+            # -d: 后台运行
+            # --remove-orphans: 清理掉配置中不再存在的废弃容器
+            sudo docker-compose up --build -d
+
+            # 4. 自动清理过期的虚悬镜像 (释放腾讯云磁盘空间)
+            sudo docker image prune -f
