@@ -67,8 +67,10 @@ jobs:
               exit 1
             fi
 
+            bash init-db.sh
+
             echo "等待容器启动"
-            sleep 20
+            sleep 15
             echo "检查容器状态"
             FAILED_CONTAINERS=$(sudo docker ps -a --filter "status=exited" --filter "status=restarting" --format "{{.Names}}")
 
