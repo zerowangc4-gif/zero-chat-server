@@ -21,7 +21,7 @@ if [ -d "data/redis" ]; then
 fi
 
 
-echo "清理未使用的 Docker 卷..."
+echo "清理未使用的 Docker 卷"
 sudo docker volume prune -f
 
 echo "---------------------------------------"
