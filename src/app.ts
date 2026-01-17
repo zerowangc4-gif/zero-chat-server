@@ -9,9 +9,7 @@ app.use(express.json());
 app.get("/health", async (req, res) => {
   const isDev = process.env.NODE_ENV === "development";
   try {
-    // 1. MySQL 心跳
     await mysql.query("SELECT 1");
-    // 2. Redis 心跳
     await redis.ping();
 
     res.status(200).json({ status: "ok", service: "zero-chat-server" });
