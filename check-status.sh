@@ -1,0 +1,1 @@
+sudo docker logs zero-chat-app --tail 50

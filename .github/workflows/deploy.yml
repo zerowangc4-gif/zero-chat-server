@@ -89,6 +89,7 @@ jobs:
                 ! -name 'docker-compose.yml' \
                 ! -name 'init-db.sh' \
                 ! -name 'reset-env.sh' \
+                ! -name 'check-status.sh' \
                 -exec rm -rf {} +
             else
               echo "部署失败以下容器启动后崩溃"
