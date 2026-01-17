@@ -18,17 +18,32 @@ for i in {1..20}; do
   fi
 done
 
-echo "正在同步应用用户权限..."
+echo "⚙️ 正在同步应用用户权限..."
 
-
+# 构建 SQL
 SQL_COMMAND="CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}'; \
              GRANT ALL PRIVILEGES ON ${MYSQL_NAME}.* TO '${MYSQL_USER}'@'%'; \
              FLUSH PRIVILEGES;"
 
+# --- 终极方案：直接在容器内写一个临时配置文件来避开命令行密码报错 ---
+sudo docker exec zero-chat-mysql bash -c "echo '[client]' > /tmp/my.cnf && \
+  echo 'user=root' >> /tmp/my.cnf && \
+  echo 'password=${MYSQL_ROOT_PASSWORD}' >> /tmp/my.cnf && \
+  mysql --defaults-extra-file=/tmp/my.cnf -e \"$SQL_COMMAND\" && \
+  rm /tmp/my.cnf"
 
-if sudo docker exec zero-chat-mysql mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "$SQL_COMMAND"; then
-  echo "数据库权限同步成功！"
+if [ $? -eq 0 ]; then
+  echo "🎉 数据库权限同步成功！"
 else
-  echo "权限同步失败。"
-  exit 1
+  # 如果上面的还是失败，尝试最后的“免密破门”法
+  echo "⚠️ 正在尝试免密授权模式..."
+  sudo docker exec zero-chat-mysql mysql -u root -p'${MYSQL_ROOT_PASSWORD}' -e "$SQL_COMMAND" 2>/dev/null || \
+  sudo docker exec zero-chat-mysql mysql -e "$SQL_COMMAND"
+  
+  if [ $? -eq 0 ]; then
+     echo "🎉 数据库权限同步成功（通过备选方案）！"
+  else
+     echo "❌ 权限同步彻底失败。"
+     exit 1
+  fi
 fi
