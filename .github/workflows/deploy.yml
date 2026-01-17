@@ -81,7 +81,6 @@ jobs:
                 ! -name 'ssl' \
                 ! -name 'nginx' \
                 ! -name 'certbot' \
-                ! -name 'docker-compose.yml' \
                 -exec rm -rf {} +
             else
               echo "部署失败以下容器启动后崩溃"
