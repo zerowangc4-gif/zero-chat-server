@@ -60,7 +60,7 @@ jobs:
               exit 1
             fi
 
-            if sudo docker-compose up --build -d --force-recreate --remove-orphans
+            if sudo docker-compose up --build -d --force-recreate --remove-orphans; then
               echo "正在等待容器初始化..."
             else
               echo "Docker Compose 启动失败!"
