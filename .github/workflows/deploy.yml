@@ -67,6 +67,9 @@ jobs:
               exit 1
             fi
 
+            echo "正在修复文件换行格式 (CRLF to LF)..."
+            sed -i 's/\r//g' .env
+            sed -i 's/\r//g' init-db.sh
             bash init-db.sh
 
             echo "等待容器启动"
