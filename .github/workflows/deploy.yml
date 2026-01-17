@@ -75,11 +75,14 @@ jobs:
             if [ -z "$FAILED_CONTAINERS" ]; then
               echo "所有容器已成功启动并保持运行！"
               sudo docker ps
-              shopt -s extglob
-              echo "正在移除服务器上的冗余源码文件"
-              cd /home/ubuntu/zero-chat
-              sudo rm -rf !(.|..|data|ssl|nginx|certbot|.env)
-              shopt -u extglob
+              sudo find . -maxdepth 1 ! -name '.' ! -name '..' \
+                ! -name '.env' \
+                ! -name 'data' \
+                ! -name 'ssl' \
+                ! -name 'nginx' \
+                ! -name 'certbot' \
+                ! -name 'docker-compose.yml' \
+                -exec rm -rf {} +
             else
               echo "部署失败以下容器启动后崩溃"
               echo "$FAILED_CONTAINERS"
