@@ -29,4 +29,4 @@ echo "环境重置完成！"
 echo "目前目录状态："
 ls -F
 echo "---------------------------------------"
-echo "现在你可以重新运行 GitHub Actions 部署，或者手动执行: sudo docker-compose up -d"
+echo "现在你可以重新运行 GitHub Actions 部署"
