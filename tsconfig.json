@@ -3,16 +3,16 @@
     "target": "ES2022",
     "module": "CommonJS",
     "moduleResolution": "node",
-    "baseUrl": ".", // 根目录
+    "rootDir": ".",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"] // 关键：告诉 TS，所有 @/ 开头的都去 src 目录下找
+      "@/*": ["src/*"]
     },
     "outDir": "./dist",
-    "rootDir": ".", // 因为 index.ts 在根目录，所以 rootDir 必须是点
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["./index.ts", "src/**/*"], // 必须包含根目录的 index.ts
-  "exclude": ["node_modules"]
+  "include": ["**/*"],
+  "exclude": ["node_modules", "dist"]
 }

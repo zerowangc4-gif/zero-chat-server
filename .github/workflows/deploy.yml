@@ -1,4 +1,4 @@
-name: Docker Production Deploy
+name: deploy zero-chat server
 
 on:
   push:
@@ -8,22 +8,21 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 1. 搬运代码：rm 设为 false，绝对不准删除服务器原有文件
-      - name: Copy files via SCP
+      - name: Sync to Serve
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          source: "./*"
+          source: "./*, !.git"
           target: "/home/ubuntu/zero-chat"
-          rm: false # 核心：保护服务器上的 SSL 文件夹和 .env
+          rm: false
 
-      - name: Deploy via SSH
+      - name: Remote Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_IP }}
@@ -31,36 +30,60 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            set -e
-            cd /home/ubuntu/zero-chat
 
-            echo ">>> [安全检查] 验证关键配置文件..."
-
-            # 检查 SSL 文件夹
-            if [ ! -d "ssl" ]; then
-              echo "❌ 错误: SSL 证书文件夹丢失！请手动补回证书。"
-              # 这里不退出，尝试让流程继续，但会提醒你
-            fi
-
-            # 检查 .env
-            if [ ! -f ".env" ]; then
-              echo "❌ 错误: .env 文件丢失！"
+            if [ ! -d "/home/ubuntu/zero-chat" ]; then
+              echo "目录 /home/ubuntu/zero-chat 不存在"
               exit 1
             fi
 
-            # 自动补全 Dockerfile (仅在缺失时)
-            if [ ! -f "Dockerfile" ]; then
-              cat <<EOF > Dockerfile
-            FROM node:18-alpine
-            WORKDIR /app
-            COPY . .
-            RUN [ -f package.json ] && npm install --production || echo "No package.json"
-            CMD ["npm", "start"]
-            EOF
+            cd /home/ubuntu/zero-chat > /dev/null 2>&1
+
+            if [ $? -eq 0 ]; then
+              echo "成功进入 /home/ubuntu/zero-chat"
+            else
+              echo "失败进入 /home/ubuntu/zero-chat"
+              exit 1
             fi
 
-            echo ">>> [启动] 正在构建并重启容器..."
-            sudo docker-compose up --build -d --remove-orphans
+            if [ ! -d "ssl" ]; then
+              echo "SSL 证书文件夹丢失"
+              exit 1
+            fi
 
-            echo ">>> [完成] 当前容器状态："
-            sudo docker ps
+            if [ ! -f ".env" ]; then
+              echo ".env 文件丢失！"
+              exit 1
+            fi
+
+            if [ ! -f "Dockerfile" ]; then
+              echo "根目录下缺少 Dockerfile,无法构建镜像"
+              exit 1
+            fi
+
+            if sudo docker-compose up --build -d --remove-orphans; then
+              echo "正在等待容器初始化..."
+            else
+              echo "Docker Compose 启动失败!"
+              exit 1
+            fi
+
+            echo "等待容器启动"
+            sleep 20
+            echo "检查容器状态"
+            FAILED_CONTAINERS=$(sudo docker ps -a --filter "status=exited" --filter "status=restarting" --format "{{.Names}}")
+
+            if [ -z "$FAILED_CONTAINERS" ]; then
+              echo "所有容器已成功启动并保持运行！"
+              sudo docker ps
+              shopt -s extglob
+              echo "正在移除服务器上的冗余源码文件"
+              cd /home/ubuntu/zero-chat
+              sudo rm -rf !(.|..|data|ssl|nginx|certbot|.env)
+              shopt -u extglob
+            else
+              echo "部署失败以下容器启动后崩溃"
+              echo "$FAILED_CONTAINERS"
+              echo ">>> 正在打印最后20行错误日志"
+              sudo docker-compose logs --tail=20
+              exit 1
+            fi
