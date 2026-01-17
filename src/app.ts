@@ -14,8 +14,6 @@ app.get("/health", async (req, res) => {
 
     res.status(200).json({ status: "ok", service: "zero-chat-server" });
   } catch (err: any) {
-    // 只有开发环境下才吐出具体错误，方便你调试
-    // 生产环境下只给 CI/CD 一个 500 信号
     res.status(500).json({
       status: "unhealthy",
       error: isDev ? err.message : "Database Connection Error",
