@@ -11,7 +11,7 @@ app.use("/api", rootRouter);
 app.all("*", (req, res) => {
   res.status(404).json({
     code: 404,
-    message: `找不到路径: ${req.originalUrl}`,
+    message: `不能发现: ${req.originalUrl}`,
   });
 });
 
