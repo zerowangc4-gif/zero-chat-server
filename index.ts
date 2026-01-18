@@ -1,24 +1,27 @@
 import "dotenv/config";
+import http from "http";
 import app from "@/app";
-import { mysql, redis } from "@/config";
+import { AppError } from "@/types";
+import { init, shutdown } from "@/utils";
 
+const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+
+const termination = ["SIGINT", "SIGTERM"];
 const startServer = async () => {
   try {
-    await mysql.query("SELECT 1");
-    console.log("MySQL 连接成功 ✅");
+    await init(server);
 
-    // 2. 验证 Redis
-    await redis.connect();
-    console.log("Redis 连接成功 ✅");
-
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log(`🚀 服务启动成功: http://localhost:${PORT}`);
+    server.listen(PORT, () => {
+      console.log("服务启动成功");
     });
-  } catch (err) {
-    console.log(err);
+  } catch (err: any) {
+    const error = err as AppError;
+    console.error("启动错误:", error.message);
     process.exit(1);
   }
 };
+
+termination.forEach(sig => process.on(sig, () => shutdown(server, sig)));
 
 startServer();

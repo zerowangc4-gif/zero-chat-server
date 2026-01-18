@@ -9,9 +9,10 @@ export const mysql = mysql2.createPool({
   host: MYSQL_HOST,
   user: MYSQL_USER,
   password: MYSQL_PASSWORD,
-
   database: MYSQL_NAME,
   waitForConnections: true,
   connectionLimit: 100,
   queueLimit: 0,
+  charset: "utf8mb4",
+  timezone: "+08:00",
 });
