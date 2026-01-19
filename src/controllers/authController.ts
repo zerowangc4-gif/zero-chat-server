@@ -15,7 +15,7 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
   const result = await loginOrRegister(address, publicKey, username);
 
   res.status(200).json({
-    code: 200,
+    success: true,
     message: "认证成功",
     data: result,
   });

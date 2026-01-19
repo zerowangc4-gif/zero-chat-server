@@ -8,7 +8,7 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
   }
 
   res.status(statusCode).json({
-    code: statusCode,
+    success: false,
     message: message,
   });
 };
