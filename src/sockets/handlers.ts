@@ -1,29 +1,49 @@
-import jwt from "jsonwebtoken";
-import { Server, Socket } from "socket.io";
-interface SocketType extends Socket {
-  userId?: string;
-}
-interface UserInfoType {
-  address: string;
-}
-export function setupSocketHandlers(io: Server) {
-  io.use(async (socket: SocketType, next) => {
+import { Server } from "socket.io";
+import { authMiddleware } from "./authMiddleware";
+import { SocketType } from "./types";
+import { redis } from "@/config";
+export function setupSocketHandlers(ioInstance: Server) {
+  ioInstance.use(authMiddleware);
+
+  ioInstance.on("connection", async (socket: SocketType) => {
+    const userId = socket.userId;
+    const currentSocketId = socket.id;
+    const onlineKey = `online:user:${userId}`;
+    const chatId = `user:${userId}`;
+
     try {
-      const token = socket.handshake.auth.token;
-      const secret = process.env.JWT_SECRET;
-      if (!token || !secret) {
-        return next(new Error("Authentication failed: Missing credentials"));
+      const oldSocketId = await redis.get(onlineKey);
+
+      if (oldSocketId && oldSocketId !== currentSocketId) {
+        ioInstance.to(oldSocketId).emit("force_logout", {
+          reason: "account_logged_in_elsewhere",
+          time: Date.now(),
+        });
       }
-      const userInfo = jwt.verify(token, secret) as UserInfoType;
-      const userId = userInfo.address;
-      if (!userId) {
-        return next(new Error("Authentication failed: User data missing"));
-      }
-      socket.userId = userId;
-      next();
-    } catch (err) {
-      next(new Error("Authentication failed: Invalid token"));
+
+      await redis.set(onlineKey, currentSocketId, { EX: 60 });
+
+      await socket.join(chatId);
+
+      socket.on("client_heartbeat", async () => {
+        const validId = await redis.get(onlineKey);
+        if (validId === currentSocketId) {
+          console.log(`💓 [Heartbeat] User: ${userId} - Status: Active`);
+          await redis.expire(onlineKey, 60);
+        } else {
+          console.warn(`⚠️ [Heartbeat] User: ${userId} - ID mismatch, ignore expire.`);
+        }
+      });
+
+      socket.on("disconnect", async () => {
+        const storedId = await redis.get(onlineKey);
+        if (storedId === currentSocketId) {
+          await redis.del(onlineKey);
+        }
+      });
+    } catch (error) {
+      console.error("连接初始化失败:", error);
+      socket.disconnect();
     }
   });
-  io.on("connection", (socket: Socket) => {});
 }
