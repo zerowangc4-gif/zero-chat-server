@@ -28,10 +28,7 @@ export function setupSocketHandlers(ioInstance: Server) {
       socket.on("client_heartbeat", async () => {
         const validId = await redis.get(onlineKey);
         if (validId === currentSocketId) {
-          console.log(`💓 [Heartbeat] User: ${userId} - Status: Active`);
           await redis.expire(onlineKey, 60);
-        } else {
-          console.warn(`⚠️ [Heartbeat] User: ${userId} - ID mismatch, ignore expire.`);
         }
       });
 
