@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import { authMiddleware } from "./authMiddleware";
 import { SocketType } from "./types";
 import { redis } from "@/config";
+import { getErrorMessage } from "@/utils";
 export function setupSocketHandlers(ioInstance: Server) {
   ioInstance.use(authMiddleware);
 
@@ -38,8 +39,9 @@ export function setupSocketHandlers(ioInstance: Server) {
           await redis.del(onlineKey);
         }
       });
-    } catch (error) {
-      console.error("连接初始化失败:", error);
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      console.error("连接初始化失败:", message);
       socket.disconnect();
     }
   });
