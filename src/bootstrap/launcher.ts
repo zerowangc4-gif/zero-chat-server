@@ -1,31 +1,19 @@
 import http from "http";
-import { Server } from "socket.io";
 import { mysql, redis, setupRedisAdapter } from "@/config";
-
-export let io: Server;
+import { initSocket, setupSocketHandlers } from "@/sockets";
 
 export async function init(server: http.Server) {
   await mysql.query("SELECT 1");
 
   await redis.connect();
 
-  io = new Server(server, {
-    cors: { origin: "*" },
-    transports: ["websocket", "polling"],
-  });
+  const ioInstance = initSocket(server);
 
-  await setupRedisAdapter(io);
+  await setupRedisAdapter(ioInstance);
 
-  setupSocketHandlers(io);
+  setupSocketHandlers(ioInstance);
 
   console.log("基础设施初始化成功");
-}
-
-function setupSocketHandlers(ioInstance: Server) {
-  ioInstance.on("connection", socket => {
-    console.log("⚓ 新用户连接:", socket.id);
-    // 以后业务逻辑写在这
-  });
 }
 
 export async function shutdown(server: http.Server, signal: string) {

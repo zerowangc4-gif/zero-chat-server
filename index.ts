@@ -2,7 +2,7 @@ import "dotenv/config";
 import http from "http";
 import app from "@/app";
 import { AppError } from "@/types";
-import { init, shutdown } from "@/utils";
+import { init, shutdown } from "@/bootstrap";
 
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
