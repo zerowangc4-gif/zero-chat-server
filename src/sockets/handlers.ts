@@ -3,14 +3,16 @@ import { authMiddleware } from "./authMiddleware";
 import { SocketType } from "./types";
 import { redis } from "@/config";
 import { getErrorMessage } from "@/utils";
+import { registerPrivateChatHandlers } from "./registerPrivateChatHandlers";
+import { SocketKeys } from "./roomHelper";
 export function setupSocketHandlers(ioInstance: Server) {
   ioInstance.use(authMiddleware);
 
   ioInstance.on("connection", async (socket: SocketType) => {
     const userId = socket.userId;
     const currentSocketId = socket.id;
-    const onlineKey = `online:user:${userId}`;
-    const chatId = `user:${userId}`;
+    const onlineKey = SocketKeys.onlineStatus(userId);
+    const userRoomId = SocketKeys.userRoom(userId);
 
     try {
       const oldSocketId = await redis.get(onlineKey);
@@ -24,7 +26,10 @@ export function setupSocketHandlers(ioInstance: Server) {
 
       await redis.set(onlineKey, currentSocketId, { EX: 60 });
 
-      await socket.join(chatId);
+      await socket.join(userRoomId);
+
+      // 注册私聊
+      registerPrivateChatHandlers(ioInstance, socket);
 
       socket.on("client_heartbeat", async () => {
         const validId = await redis.get(onlineKey);
