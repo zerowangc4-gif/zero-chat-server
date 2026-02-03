@@ -23,10 +23,9 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
 });
 
 export const getNonce = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  console.log("dddd", req);
   const { address } = req.body;
   if (!address) {
-    throw new AppError(400, "Missing required parameters");
+    throw new AppError(400, "我在测试是否能进入到这里");
   }
   const nonce = crypto.randomInt(100000, 999999).toString();
   const authSlogan = getAuthSlogan(nonce);
