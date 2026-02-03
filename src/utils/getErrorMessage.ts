@@ -1,27 +1,19 @@
 export const getErrorMessage = (error: unknown): string => {
-  if (!error) return "未知错误";
+  if (typeof error === "string") return error;
+  if (!error || typeof error !== "object") return "An unknown error occurred";
 
-  if (error instanceof Error) {
-    const axiosError = error as any;
-    if (axiosError.response?.data?.message) {
-      return axiosError.response.data.message;
-    }
-    if (axiosError.response?.data?.error) {
-      return axiosError.response.data.error;
-    }
-    return error.message;
-  }
+  const err = error as Record<string, unknown>;
 
-  if (typeof error === "string") {
-    return error;
-  }
+  const message =
+    (err.response as Record<string, unknown>)?.data instanceof Object
+      ? ((err.response as any).data.message ?? (err.response as any).data.error)
+      : null;
 
-  if (typeof error === "object") {
-    const obj = error as Record<string, any>;
-    if (obj.message) return String(obj.message);
-    if (obj.msg) return String(obj.msg);
-    if (obj.error) return String(obj.error);
-  }
+  const finalMessage = message ?? err.message ?? err.msg ?? err.error;
 
-  return String(error);
+  if (typeof finalMessage === "string") return finalMessage;
+
+  if (error instanceof Error) return error.message;
+
+  return "An unknown error occurred";
 };
