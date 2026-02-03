@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyMessage } from "ethers";
+
 import { loginOrRegister } from "@/services";
 import { AppError } from "@/types";
 import { catchAsync, getAuthSlogan, getAuthNonceKey } from "@/utils";
@@ -23,6 +23,7 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
 });
 
 export const getNonce = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  console.log(req.body);
   const { address } = req.body;
   if (!address) {
     throw new AppError(400, "Missing required parameters");
