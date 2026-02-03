@@ -23,7 +23,7 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
 });
 
 export const getNonce = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  console.log(req.body);
+  console.log("dddddd", req);
   const { address } = req.body;
   if (!address) {
     throw new AppError(400, "Missing required parameters");
