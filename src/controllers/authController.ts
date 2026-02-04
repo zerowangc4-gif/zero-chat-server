@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 
-import { loginOrRegister } from "@/services";
+import { loginOrRegister, getTokens } from "@/services";
 import { AppError } from "@/types";
-import { catchAsync, getAuthSlogan, getAuthNonceKey } from "@/utils";
+import { catchAsync, getAuthSlogan, getAuthNonceKey, verifyToken } from "@/utils";
 import crypto from "crypto";
 import { redis } from "@/config";
 
@@ -36,3 +36,41 @@ export const getNonce = catchAsync(async (req: Request, res: Response, next: Nex
     data: authSlogan,
   });
 });
+
+export const handleRefreshToken = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      throw new AppError(400, "Missing required parameters");
+    }
+    const { newAccessToken, newRefreshToken } = verifyToken(refreshToken);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      },
+    });
+  },
+);
+
+export const handleTokenRotate = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { refreshToken, address, signature } = req.body;
+
+    if (!refreshToken || !address || !signature) {
+      throw new AppError(400, "Missing required parameters");
+    }
+
+    const { newAccessToken, newRefreshToken } = await getTokens(refreshToken, address, signature);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      },
+    });
+  },
+);
