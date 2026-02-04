@@ -8,3 +8,21 @@ export interface SocketType extends Socket {
 export interface UserInfoType {
   address: string;
 }
+
+export interface ClientAckResponse {
+  status: "ok" | "error";
+  receivedAt?: number;
+}
+
+export interface AckError {
+  err: Error | null;
+}
+
+export interface ChatMessagePayload {
+  seqId: number;
+  from: string;
+  to: string;
+  content: string;
+  clientMsgId: string;
+  timestamp: number;
+}
