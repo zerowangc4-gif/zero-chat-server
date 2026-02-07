@@ -10,10 +10,10 @@ export function verifyToken(token: string) {
     const decoded = jwt.verify(token, secret) as TokenType;
     const payload = { id: decoded.id, address: decoded.address };
     const newAccessToken = jwt.sign(payload, secret, {
-      expiresIn: "5s",
+      expiresIn: "5h",
     });
     const newRefreshToken = jwt.sign(payload, secret, {
-      expiresIn: "10s",
+      expiresIn: "30d",
     });
 
     return {
