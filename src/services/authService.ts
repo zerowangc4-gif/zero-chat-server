@@ -35,8 +35,8 @@ export async function loginOrRegister(
     id: user.id,
     address: user.address,
   };
-  const accessToken = jwt.sign(payload, secret, { expiresIn: "5h" });
-  const refreshToken = jwt.sign(payload, secret, { expiresIn: "30d" });
+  const accessToken = jwt.sign(payload, secret, { expiresIn: "5s" });
+  const refreshToken = jwt.sign(payload, secret, { expiresIn: "10s" });
 
   return {
     user: {
@@ -74,10 +74,10 @@ export async function getTokens(token: string, address: string, signature: strin
   await redis.del(authNonceKey);
   const payload: TokenType = { id: decoded.id, address: decoded.address };
   const newAccessToken = jwt.sign(payload, secret, {
-    expiresIn: "5h",
+    expiresIn: "5s",
   });
   const newRefreshToken = jwt.sign(payload, secret, {
-    expiresIn: "30d",
+    expiresIn: "10s",
   });
 
   return {
