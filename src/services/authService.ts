@@ -44,6 +44,7 @@ export async function loginOrRegister(
       username: user.username,
       address: user.address,
       publicKey: user.public_key,
+      avatarSeed: user.avatar_seed,
     },
     accessToken,
     refreshToken,
