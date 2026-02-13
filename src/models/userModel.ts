@@ -52,3 +52,15 @@ export async function createUser(
 
   return newUser;
 }
+
+export async function updateAvatarSeed(address: string, avatarSeed: string): Promise<void> {
+  const sql = "UPDATE users SET avatar_seed = ? WHERE address = ?";
+  const [result] = await mysql.execute<ResultSetHeader>(sql, [avatarSeed, address]);
+
+  if (result.affectedRows === 0) {
+    const userExists = await findByAddress(address);
+    if (!userExists) {
+      throw new AppError(400, "User not found");
+    }
+  }
+}
