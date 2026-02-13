@@ -1,13 +1,9 @@
 import jwt, { TokenExpiredError } from "jsonwebtoken";
-import { AppError } from "@/types";
+import { AppError, AuthRequest } from "@/types";
 import { UserInfoType } from "@/sockets";
 import { Request, Response, NextFunction } from "express";
 
-export interface AuthReq extends Request {
-  address?: string;
-}
-
-export const authMiddleware = (req: AuthReq, _res: Response, next: NextFunction) => {
+export const authMiddleware = (req: AuthRequest, _res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
