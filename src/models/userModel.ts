@@ -32,7 +32,7 @@ export async function createUser(
   address: string,
 ): Promise<User> {
   const sql = "INSERT INTO users (username, public_key, address, avatar_seed) VALUES (?, ?, ?, ?)";
-
+  console.log(username, publicKey, address);
   const [result] = await mysql.execute<ResultSetHeader>(sql, [
     username,
     publicKey,
