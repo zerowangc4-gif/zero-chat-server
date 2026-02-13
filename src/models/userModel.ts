@@ -39,7 +39,6 @@ export async function createUser(
     address,
     publicKey,
   ]);
-
   if (result.affectedRows === 0) {
     throw new AppError(500, "Database insertion failed");
   }
