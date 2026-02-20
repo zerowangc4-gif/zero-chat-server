@@ -63,11 +63,3 @@ export async function updateAvatarSeed(address: string, avatarSeed: string): Pro
     }
   }
 }
-
-export async function GetContacts(_address: string): Promise<User[]> {
-  const sql = "SELECT * FROM users";
-
-  const [rows] = await mysql.query<User[]>(sql);
-
-  return rows;
-}
