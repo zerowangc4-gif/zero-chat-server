@@ -41,5 +41,6 @@ export function getformatUsers(users: User[]) {
     avatarSeed: user.avatar_seed,
     createdAt: user.created_at,
   }));
+
   return formattedUsers;
 }
