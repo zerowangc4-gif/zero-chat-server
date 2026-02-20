@@ -2,7 +2,7 @@ import { Response, NextFunction } from "express";
 
 import { handleUpdateAvatar, handleGetContacts } from "@/services";
 import { AppError, AuthRequest } from "@/types";
-import { catchAsync } from "@/utils";
+import { catchAsync, getformatUsers } from "@/utils";
 
 export const updateAvatar = catchAsync(
   async (req: AuthRequest, res: Response, _next: NextFunction) => {
@@ -30,11 +30,12 @@ export const getContacts = catchAsync(
     }
 
     const users = await handleGetContacts(address);
+    const formatUsers = getformatUsers(users);
 
     res.status(200).json({
       success: true,
       message: "Authentication successful",
-      data: users,
+      data: formatUsers,
     });
   },
 );
