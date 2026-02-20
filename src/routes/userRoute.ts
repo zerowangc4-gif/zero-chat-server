@@ -1,7 +1,9 @@
 import { Router } from "express";
-import { updateAvatar } from "@/controllers";
+import { updateAvatar, getContacts } from "@/controllers";
 
 const router = Router();
+
+router.get("/getContacts", getContacts);
 
 router.post("/updateAvatar", updateAvatar);
 

@@ -1,10 +1,18 @@
-import { updateAvatarSeed } from "@/models";
+import { updateAvatarSeed, GetContacts } from "@/models";
 import { AppError } from "@/types";
 
 export async function handleUpdateAvatar(address: string, avatarSeed: string): Promise<void> {
-  if (!avatarSeed || avatarSeed.trim() === "") {
+  if (!address || avatarSeed.trim() === "") {
     throw new AppError(400, "Avatar seed cannot be empty");
   }
 
   await updateAvatarSeed(address, avatarSeed);
+}
+
+export async function handleGetContacts(address: string): Promise<void> {
+  if (!address) {
+    throw new AppError(400, "address cannot be empty");
+  }
+
+  await GetContacts(address);
 }
