@@ -1,6 +1,6 @@
 import jwt, { TokenExpiredError } from "jsonwebtoken";
 import { AppError, TokenType } from "@/types";
-
+import { User } from "@/models";
 export function verifyToken(token: string) {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
@@ -30,4 +30,17 @@ export function verifyToken(token: string) {
 
     throw new AppError(401, "authentication_failed");
   }
+}
+
+export function getformatUsers(users: User[]) {
+  const formattedUsers = users.map(user => ({
+    id: user.id,
+    username: user.username,
+    publicKey: user.public_key,
+    address: user.address,
+    avatarSeed: user.avatar_seed,
+    createdAt: user.created_at,
+  }));
+
+  return formattedUsers;
 }
