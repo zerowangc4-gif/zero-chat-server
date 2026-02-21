@@ -23,7 +23,7 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
       const { content, clientMsgId } = data;
 
       if (!socket.userId) {
-        return ack({ status: "error", message: "Identity unverified" });
+        return ack({ status: "failed", message: "Identity unverified" });
       }
       const from = socket.userId.toLowerCase();
       const to = data.to.toLowerCase();
@@ -41,17 +41,16 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
         timestamp: Date.now(),
       };
 
-      // 尝试推送给 B
       const onlineSocketId = await redis.get(SocketKeys.onlineStatus(to));
 
       if (!onlineSocketId) {
         await saveOfflineMessage(to, seqId, payload);
-        return ack({ status: "sent_to_server", seqId });
+        return ack({ status: "sentToServer", seqId });
       }
 
       const userRoomId = SocketKeys.userRoom(to);
       io.to(userRoomId)
-        .timeout(1000)
+        .timeout(2000)
         .emit("new_message", payload, async (err: AckError, responses: ClientAckResponse[]) => {
           const Received = !err && responses?.length > 0;
 
@@ -59,12 +58,12 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
             return ack({ status: "delivered", seqId });
           } else {
             await saveOfflineMessage(to, seqId, payload);
-            ack({ status: "sent_to_server", seqId });
+            ack({ status: "sentToServer", seqId });
           }
         });
     } catch (error: unknown) {
       const message = getErrorMessage(error);
-      ack({ status: "error", message: message });
+      ack({ status: "failed", message: message });
     }
   });
 
