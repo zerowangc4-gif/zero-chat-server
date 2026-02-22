@@ -28,7 +28,6 @@ export function setupSocketHandlers(ioInstance: Server) {
 
       await socket.join(userRoomId);
 
-      // 注册私聊
       registerPrivateChatHandlers(ioInstance, socket);
 
       socket.on("client_heartbeat", async () => {
