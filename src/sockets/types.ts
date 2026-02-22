@@ -19,9 +19,9 @@ export interface AckError {
 }
 
 export interface ChatMessagePayload {
+  fromId: string;
+  toId: string;
   seqId: number;
-  from: string;
-  to: string;
   content: string;
   clientMsgId: string;
   timestamp: number;

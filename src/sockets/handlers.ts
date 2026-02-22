@@ -9,7 +9,7 @@ export function setupSocketHandlers(ioInstance: Server) {
   ioInstance.use(authMiddleware);
 
   ioInstance.on("connection", async (socket: SocketType) => {
-    const userId = socket.userId?.toLowerCase();
+    const userId = socket.userId;
     const currentSocketId = socket.id;
     const onlineKey = SocketKeys.onlineStatus(userId);
     const userRoomId = SocketKeys.userRoom(userId);
