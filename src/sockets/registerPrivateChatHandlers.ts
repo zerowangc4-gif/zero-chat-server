@@ -81,33 +81,6 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
   });
 
   // 离线消息同步接口
-  socket.on("sync_offline_messages", async (data, ack) => {
-    try {
-      const { lastSeqId } = data;
-      const myId = socket.userId;
-      if (!myId) return ack({ status: "failed", message: "Unverified" });
-
-      const offlineKey = SocketKeys.offlineQueue(myId);
-
-      const rawMessages = await redis.zRangeByScore(offlineKey, `(${lastSeqId}`, "+inf");
-
-      if (!rawMessages || rawMessages.length === 0) {
-        return ack({ status: "ok", data: [], message: "Already up to date" });
-      }
-
-      const messages = rawMessages.map(msg => JSON.parse(msg));
-
-      ack({
-        status: "ok",
-        data: messages,
-      });
-
-      await redis.del(offlineKey);
-    } catch (error) {
-      const message = getErrorMessage(error);
-      ack({ status: "error", message: message });
-    }
-  });
 
   socket.on("sync_offline_messages", async (data, ack) => {
     try {
