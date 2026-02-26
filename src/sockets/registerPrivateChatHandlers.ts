@@ -80,7 +80,7 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
 
     io.to(fromRoomId).emit("message_read_update", {
       readerId: readerId,
-      lastReadSessionSeqNum: lastReadSessionSeqNum,
+      lastSessionSeqNum: lastReadSessionSeqNum,
     });
   });
 
