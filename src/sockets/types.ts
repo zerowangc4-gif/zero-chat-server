@@ -10,7 +10,7 @@ export interface UserInfoType {
 }
 
 export interface ClientAckResponse {
-  status: "ok" | "error";
+  status: "delivered" | "failed";
   receivedAt?: number;
 }
 
@@ -21,7 +21,8 @@ export interface AckError {
 export interface ChatMessagePayload {
   fromId: string;
   toId: string;
-  seqId: number;
+  syncUserMsgSeqNum?: number;
+  sessionSeqNum: number;
   content: string;
   clientMsgId: string;
   timestamp: number;
