@@ -97,7 +97,7 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
       const messages = await redis.zRangeByScore(offlineKey, `(${lastSyncUserMsgSeqNum}`, "+inf");
 
       if (!messages || messages.length === 0) {
-        return ack({ status: "delivered", data: [], message: "Already up to date" });
+        return ack({ status: "delivered", data: [], message: "Already Received message" });
       }
 
       const formatMessages = messages.map(msg => JSON.parse(msg));
