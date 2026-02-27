@@ -80,8 +80,6 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
 
       const myId = socket.userId;
 
-      if (!myId) return ack({ status: "failed", message: "Unverified" });
-
       const offlineKey = getOfflineKey(myId);
 
       const messages = await redis.zRangeByScore(offlineKey, `(${lastSyncUserMsgSeqNum}`, "+inf");
