@@ -51,8 +51,13 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
       const userRoomId = getUserRoomId(payload.chatId);
       io.to(userRoomId)
         .timeout(2000)
-        .emit("new_message", payload, async (res: ChatMessagePayload) => {
-          ack(res);
+        .emit("new_message", payload, async (err: unknown, res: ChatMessagePayload) => {
+          console.log("-------------", res);
+          if (err) {
+            ack(payload);
+          } else {
+            ack(res);
+          }
         });
     } catch (error: unknown) {
       const message = getErrorMessage(error);
