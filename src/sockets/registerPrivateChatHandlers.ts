@@ -25,23 +25,20 @@ export async function saveOfflineMessage(
 
 export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
   socket.on("send_message", async (data, ack) => {
+    const { toId, content, clientMsgId } = data;
+    const fromId = socket.userId as string;
+    const sessionSeqNum = await getSessionSeqNum(fromId, toId);
+
+    const syncUserMsgSeqNum = await getSyncUserMsgSeqNum(toId);
+
+    const payload: ChatMessagePayload = {
+      chatId: toId,
+      id: clientMsgId,
+      status: "sentToServer",
+      sessionSeqNum: sessionSeqNum,
+      timestamp: Date.now(),
+    };
     try {
-      const { toId, content, clientMsgId } = data;
-
-      const fromId = socket.userId as string;
-
-      const sessionSeqNum = await getSessionSeqNum(fromId, toId);
-
-      const syncUserMsgSeqNum = await getSyncUserMsgSeqNum(toId);
-
-      const payload: ChatMessagePayload = {
-        chatId: toId,
-        id: clientMsgId,
-        status: "sentToServer",
-        sessionSeqNum: sessionSeqNum,
-        timestamp: Date.now(),
-      };
-
       const onlineValue = await getUserOnlineValue(payload.chatId);
 
       if (!onlineValue) {
@@ -51,27 +48,26 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
       const userRoomId = getUserRoomId(payload.chatId);
       io.to(userRoomId)
         .timeout(2000)
-        .emit("new_message", payload, async (err: unknown, res: ChatMessagePayload) => {
-          console.log("-------------", res);
+        .emit("new_message", payload, async (err: unknown, res: ChatMessagePayload[]) => {
           if (err) {
             ack(payload);
           } else {
-            ack(res);
+            ack(res[0] || payload);
           }
         });
     } catch (error: unknown) {
-      const message = getErrorMessage(error);
-      ack({ status: "failed", message: message });
+      console.error(error);
+      ack(payload);
     }
   });
 
   socket.on("read_report", async data => {
     const { fromId, lastReadSessionSeqNum } = data;
-    const readerId = socket.userId;
+
     const fromRoomId = getUserRoomId(fromId);
 
     io.to(fromRoomId).emit("message_read_update", {
-      readerId: readerId,
+      chatId: socket.userId,
       lastSessionSeqNum: lastReadSessionSeqNum,
     });
   });
