@@ -68,8 +68,6 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
 
     const userRoomId = getUserRoomId(fromId);
 
-    console.log(userRoomId);
-
     io.to(userRoomId).emit("message_read_update", {
       chatId: socket.userId,
       lastSessionSeqNum: lastSessionSeqNum,
