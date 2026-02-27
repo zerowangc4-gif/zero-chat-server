@@ -1,47 +1,40 @@
 import { Server } from "socket.io";
 import { authMiddleware } from "./authMiddleware";
 import { SocketType } from "./types";
-import { redis } from "@/config";
 import { getErrorMessage } from "@/utils";
 import { registerPrivateChatHandlers } from "./registerPrivateChatHandlers";
-import { SocketKeys } from "./roomHelper";
+import {
+  removeUserOnlineValue,
+  joinUserRoom,
+  setUserOnlineValue,
+  refreshUserOnlineStatus,
+  clearUserOnlineValue,
+} from "./roomHelper";
+import { AppError } from "@/types";
 export function setupSocketHandlers(ioInstance: Server) {
   ioInstance.use(authMiddleware);
 
   ioInstance.on("connection", async (socket: SocketType) => {
     const userId = socket.userId;
-    const currentSocketId = socket.id;
-    const onlineKey = SocketKeys.onlineStatus(userId);
-    const userRoomId = SocketKeys.userRoom(userId);
 
     try {
-      const oldSocketId = await redis.get(onlineKey);
-
-      if (oldSocketId && oldSocketId !== currentSocketId) {
-        ioInstance.to(oldSocketId).emit("force_logout", {
-          reason: "account_logged_in_elsewhere",
-          time: Date.now(),
-        });
+      if (!userId) {
+        throw new AppError(400, "Invalid userId format");
       }
+      await removeUserOnlineValue(userId, socket.id, ioInstance);
 
-      await redis.set(onlineKey, currentSocketId, { EX: 60 });
+      await setUserOnlineValue(userId, socket.id);
 
-      await socket.join(userRoomId);
+      await joinUserRoom(userId, socket);
 
       registerPrivateChatHandlers(ioInstance, socket);
 
       socket.on("client_heartbeat", async () => {
-        const validId = await redis.get(onlineKey);
-        if (validId === currentSocketId) {
-          await redis.expire(onlineKey, 60);
-        }
+        await refreshUserOnlineStatus(userId, socket.id);
       });
 
       socket.on("disconnect", async () => {
-        const storedId = await redis.get(onlineKey);
-        if (storedId === currentSocketId) {
-          await redis.del(onlineKey);
-        }
+        await clearUserOnlineValue(userId, socket.id);
       });
     } catch (error: unknown) {
       const message = getErrorMessage(error);

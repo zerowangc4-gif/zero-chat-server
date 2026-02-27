@@ -9,20 +9,14 @@ export interface UserInfoType {
   address: string;
 }
 
-export interface ClientAckResponse {
-  status: "ok" | "error";
-  receivedAt?: number;
-}
-
-export interface AckError {
-  err: Error | null;
-}
+export type MessageStatus = "pending" | "sentToServer" | "delivered" | "read" | "failed";
 
 export interface ChatMessagePayload {
-  fromId: string;
-  toId: string;
-  seqId: number;
+  chatId: string;
+  formId: string;
+  id: string;
   content: string;
-  clientMsgId: string;
+  status: MessageStatus;
+  sessionSeqNum?: number;
   timestamp: number;
 }

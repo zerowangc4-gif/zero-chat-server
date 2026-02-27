@@ -1,106 +1,100 @@
 import { Server } from "socket.io";
-import { SocketType, ClientAckResponse, AckError, ChatMessagePayload } from "./types";
-import { SocketKeys } from "./roomHelper";
+import { SocketType, ChatMessagePayload } from "./types";
+import {
+  getSessionSeqNum,
+  getSyncUserMsgSeqNum,
+  getUserOnlineValue,
+  getOfflineKey,
+  getUserRoomId,
+} from "./roomHelper";
 import { redis } from "@/config";
 import { getErrorMessage } from "@/utils";
-export async function saveOfflineMessage(toId: string, seqId: number, payload: ChatMessagePayload) {
-  const offlineKey = SocketKeys.offlineQueue(toId);
-  try {
-    await redis
-      .multi()
-      .zAdd(offlineKey, { score: seqId, value: JSON.stringify(payload) })
-      .zRemRangeByRank(offlineKey, 0, -1001)
-      .expire(offlineKey, 3 * 24 * 3600)
-      .exec();
-  } catch (error: unknown) {
-    throw error;
-  }
+export async function saveOfflineMessage(
+  toId: string,
+  syncUserMsgSeqNum: number,
+  payload: ChatMessagePayload,
+) {
+  const offlineKey = getOfflineKey(toId);
+  await redis
+    .multi()
+    .zAdd(offlineKey, { score: syncUserMsgSeqNum, value: JSON.stringify(payload) })
+    .zRemRangeByRank(offlineKey, 0, -1001)
+    .expire(offlineKey, 3 * 24 * 3600)
+    .exec();
 }
 
 export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
-  // 1. 发送消息
   socket.on("send_message", async (data, ack) => {
+    const { toId, content, clientMsgId } = data;
+    const fromId = socket.userId as string;
+    const sessionSeqNum = await getSessionSeqNum(fromId, toId);
+
+    const syncUserMsgSeqNum = await getSyncUserMsgSeqNum(toId);
+
+    const payload: ChatMessagePayload = {
+      chatId: toId,
+      formId: fromId,
+      id: clientMsgId,
+      content: content,
+      status: "sentToServer",
+      sessionSeqNum: sessionSeqNum,
+      timestamp: Date.now(),
+    };
     try {
-      const { content, clientMsgId } = data;
+      const onlineValue = await getUserOnlineValue(payload.chatId);
 
-      if (!socket.userId) {
-        return ack({ status: "failed", message: "Identity unverified" });
-      }
-      const fromId = socket.userId;
-      const toId = data.toId;
-
-      const chatKey = [fromId, toId].sort().join("_");
-
-      const seqId = await redis.incr(`seq:chat:${chatKey}`);
-
-      const payload: ChatMessagePayload = {
-        seqId,
-        fromId,
-        toId,
-        content,
-        clientMsgId,
-        timestamp: Date.now(),
-      };
-
-      const onlineSocketId = await redis.get(SocketKeys.onlineStatus(toId));
-
-      if (!onlineSocketId) {
-        await saveOfflineMessage(toId, seqId, payload);
-        return ack({ status: "sentToServer", seqId });
+      if (!onlineValue) {
+        return ack(payload);
       }
 
-      const userRoomId = SocketKeys.userRoom(toId);
+      const userRoomId = getUserRoomId(payload.chatId);
       io.to(userRoomId)
         .timeout(2000)
-        .emit("new_message", payload, async (err: AckError, responses: ClientAckResponse[]) => {
-          const Received = !err && responses?.length > 0;
-
-          if (Received) {
-            return ack({ status: "delivered", seqId });
+        .emit("new_message", payload, async (err: unknown, res: ChatMessagePayload[]) => {
+          if (err) {
+            ack(payload);
           } else {
-            await saveOfflineMessage(toId, seqId, payload);
-            ack({ status: "sentToServer", seqId });
+            ack(res[0] || payload);
           }
         });
     } catch (error: unknown) {
-      const message = getErrorMessage(error);
-      ack({ status: "failed", message: message });
+      console.error(error);
+      ack(payload);
     }
   });
 
-  // 已读回执接口
   socket.on("read_report", async data => {
-    const { fromId, lastReadSeqId } = data;
-    const readerId = socket.userId;
-    const fromRoomId = SocketKeys.userRoom(fromId);
+    const { fromId, lastSessionSeqNum } = data;
 
-    io.to(fromRoomId).emit("message_read_update", {
-      readerId: readerId,
-      lastReadSeqId: lastReadSeqId,
+    const userRoomId = getUserRoomId(fromId);
+
+    console.log(userRoomId);
+
+    io.to(userRoomId).emit("message_read_update", {
+      chatId: socket.userId,
+      lastSessionSeqNum: lastSessionSeqNum,
     });
   });
 
-  // 离线消息同步接口
-
   socket.on("sync_offline_messages", async (data, ack) => {
     try {
-      const { lastSeqId } = data;
+      const { lastSyncUserMsgSeqNum } = data;
+
       const myId = socket.userId;
+
       if (!myId) return ack({ status: "failed", message: "Unverified" });
 
-      const offlineKey = SocketKeys.offlineQueue(myId);
+      const offlineKey = getOfflineKey(myId);
 
-      const rawMessages = await redis.zRangeByScore(offlineKey, `(${lastSeqId}`, "+inf");
+      const messages = await redis.zRangeByScore(offlineKey, `(${lastSyncUserMsgSeqNum}`, "+inf");
 
-      if (!rawMessages || rawMessages.length === 0) {
-        return ack({ status: "delivered", data: [], message: "Already up to date" });
+      if (!messages || messages.length === 0) {
+        return ack({ status: "delivered", data: [], message: "Already Received message" });
       }
 
-      const messages = rawMessages.map(msg => JSON.parse(msg));
+      const formatMessages = messages.map(msg => JSON.parse(msg));
 
-      ack({ status: "delivered", data: messages });
-
-      await redis.del(offlineKey);
+      ack({ status: "delivered", data: formatMessages });
     } catch (error) {
       const message = getErrorMessage(error);
       ack({ status: "failed", message: message });
