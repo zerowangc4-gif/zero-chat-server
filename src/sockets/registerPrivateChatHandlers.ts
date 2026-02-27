@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { SocketType, ClientAckResponse, AckError, ChatMessagePayload } from "./types";
+import { SocketType, ChatMessagePayload } from "./types";
 import {
   getSessionSeqNum,
   getSyncUserMsgSeqNum,
@@ -26,46 +26,33 @@ export async function saveOfflineMessage(
 export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
   socket.on("send_message", async (data, ack) => {
     try {
-      const { content, clientMsgId } = data;
+      const { toId, content, clientMsgId } = data;
 
-      if (!socket.userId) {
-        return ack({ status: "failed", message: "Identity unverified" });
-      }
-      const fromId = socket.userId;
-      const toId = data.toId;
+      const fromId = socket.userId as string;
 
       const sessionSeqNum = await getSessionSeqNum(fromId, toId);
+
       const syncUserMsgSeqNum = await getSyncUserMsgSeqNum(toId);
 
       const payload: ChatMessagePayload = {
-        sessionSeqNum,
-        syncUserMsgSeqNum,
-        fromId,
-        toId,
-        content,
-        clientMsgId,
+        chatId: toId,
+        id: clientMsgId,
+        status: "sentToServer",
+        sessionSeqNum: sessionSeqNum,
         timestamp: Date.now(),
       };
 
-      const onlineValue = await getUserOnlineValue(toId);
+      const onlineValue = await getUserOnlineValue(payload.chatId);
 
       if (!onlineValue) {
-        await saveOfflineMessage(toId, syncUserMsgSeqNum, payload);
-        return ack({ status: "sentToServer", sessionSeqNum });
+        return ack(payload);
       }
 
-      const userRoomId = getUserRoomId(toId);
+      const userRoomId = getUserRoomId(payload.chatId);
       io.to(userRoomId)
         .timeout(2000)
-        .emit("new_message", payload, async (err: AckError, responses: ClientAckResponse[]) => {
-          const Received = !err && responses?.length > 0;
-
-          if (Received) {
-            return ack({ status: "delivered", sessionSeqNum });
-          } else {
-            await saveOfflineMessage(toId, syncUserMsgSeqNum, payload);
-            ack({ status: "sentToServer", sessionSeqNum });
-          }
+        .emit("new_message", payload, async (res: ChatMessagePayload) => {
+          ack(res);
         });
     } catch (error: unknown) {
       const message = getErrorMessage(error);

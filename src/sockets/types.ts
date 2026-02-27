@@ -9,21 +9,12 @@ export interface UserInfoType {
   address: string;
 }
 
-export interface ClientAckResponse {
-  status: "delivered" | "failed";
-  receivedAt?: number;
-}
-
-export interface AckError {
-  err: Error | null;
-}
+export type MessageStatus = "pending" | "sentToServer" | "delivered" | "read" | "failed";
 
 export interface ChatMessagePayload {
-  fromId: string;
-  toId: string;
-  syncUserMsgSeqNum?: number;
-  sessionSeqNum: number;
-  content: string;
-  clientMsgId: string;
+  chatId: string;
+  id: string;
+  status: MessageStatus;
+  sessionSeqNum?: number;
   timestamp: number;
 }
