@@ -33,7 +33,9 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
 
     const payload: ChatMessagePayload = {
       chatId: toId,
+      formId: fromId,
       id: clientMsgId,
+      content: content,
       status: "sentToServer",
       sessionSeqNum: sessionSeqNum,
       timestamp: Date.now(),
