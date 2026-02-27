@@ -64,13 +64,13 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
   });
 
   socket.on("read_report", async data => {
-    const { fromId, lastReadSessionSeqNum } = data;
+    const { fromId, lastSessionSeqNum } = data;
 
     const fromRoomId = getUserRoomId(fromId);
 
     io.to(fromRoomId).emit("message_read_update", {
       chatId: socket.userId,
-      lastSessionSeqNum: lastReadSessionSeqNum,
+      lastSessionSeqNum: lastSessionSeqNum,
     });
   });
 
