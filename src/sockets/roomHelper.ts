@@ -69,3 +69,30 @@ export async function getSyncUserMsgSeqNum(toId: string) {
   const syncUserMsgSeqNum = await redis.incr(`seq:syncUserMsg:${toId}`);
   return syncUserMsgSeqNum;
 }
+
+export async function getLatestSyncUserMsgSeqNum(userId: IdType) {
+  const offlineKey = getOfflineKey(userId);
+
+  const result = await redis.zRangeWithScores(offlineKey, -1, -1);
+
+  if (result && result.length > 0) {
+    return result[0].score;
+  }
+
+  return 0;
+}
+
+export async function removeReadOfflineMessages(
+  socket: SocketType,
+  userId: IdType,
+  message: string,
+) {
+  const offlineKey = getOfflineKey(userId);
+
+  const score = await redis.zScore(offlineKey, message);
+
+  if (score !== null) {
+    socket.emit(EVENT.CHAT.UPDATE_SYNCUSERMSGSEQNUM, score);
+    await redis.zRemRangeByScore(offlineKey, 0, score);
+  }
+}

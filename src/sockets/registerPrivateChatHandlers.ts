@@ -6,16 +6,15 @@ import {
   getUserOnlineValue,
   getOfflineKey,
   getUserRoomId,
+  getLatestSyncUserMsgSeqNum,
+  removeReadOfflineMessages,
 } from "./roomHelper";
 import { redis } from "@/config";
 
 import { EVENT, MESSAGE_STATUS } from "@/constants";
-export async function saveOfflineMessage(
-  toId: string,
-  syncUserMsgSeqNum: number,
-  payload: ChatMessage,
-) {
+export async function saveOfflineMessage(toId: string, payload: ChatMessage) {
   const offlineKey = getOfflineKey(toId);
+  const syncUserMsgSeqNum = await getSyncUserMsgSeqNum(toId);
   await redis
     .multi()
     .zAdd(offlineKey, { score: syncUserMsgSeqNum, value: JSON.stringify(payload) })
@@ -30,8 +29,6 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
     const fromId = socket.userId as string;
     const sessionSeqNum = await getSessionSeqNum(fromId, toId);
 
-    const syncUserMsgSeqNum = await getSyncUserMsgSeqNum(toId);
-
     const payload: ChatMessage = {
       chatId: toId,
       fromId: fromId,
@@ -41,7 +38,9 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
       sessionSeqNum: sessionSeqNum,
       timestamp: Date.now(),
     };
+
     try {
+      await saveOfflineMessage(toId, payload);
       const onlineValue = await getUserOnlineValue(payload.chatId);
 
       if (!onlineValue) {
@@ -59,7 +58,6 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
           }
         });
     } catch (error: unknown) {
-      console.error(error);
       ack(payload);
     }
   });
@@ -73,5 +71,28 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
       chatId: socket.userId,
       lastSessionSeqNum: lastSessionSeqNum,
     });
+  });
+
+  socket.on(EVENT.CHAT.SYNC_OFFINE_MESSAGES, async (syncUserMsgSeqNum: number) => {
+    const userId = socket.userId as string;
+    const offlineKey = getOfflineKey(userId);
+
+    const rawMessages = await redis.zRange(offlineKey, syncUserMsgSeqNum + 1, "+inf", {
+      BY: "SCORE",
+    });
+
+    if (rawMessages && rawMessages.length > 0) {
+      const messages = rawMessages.map(m => JSON.parse(m));
+
+      socket.emit(
+        EVENT.CHAT.SYNC_OFFINE_MESSAGES,
+        messages,
+        async (err: unknown, res: ChatMessage) => {
+          if (!err && res) {
+            await removeReadOfflineMessages(socket, userId, JSON.stringify(res));
+          }
+        },
+      );
+    }
   });
 }

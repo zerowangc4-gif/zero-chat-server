@@ -9,6 +9,7 @@ import {
   setUserOnlineValue,
   refreshUserOnlineStatus,
   clearUserOnlineValue,
+  getLatestSyncUserMsgSeqNum,
 } from "./roomHelper";
 import { AppError } from "@/types";
 import { EVENT } from "@/constants";
@@ -30,7 +31,9 @@ export function setupSocketHandlers(ioInstance: Server) {
 
       registerPrivateChatHandlers(ioInstance, socket);
 
-      socket.on(EVENT.SYSTEM.HEARTBEAT, async () => {
+      socket.on(EVENT.SYSTEM.HEARTBEAT, async ack => {
+        const LatestSyncUserMsgSeqNum = await getLatestSyncUserMsgSeqNum(userId);
+        ack(LatestSyncUserMsgSeqNum);
         await refreshUserOnlineStatus(userId, socket.id);
       });
 

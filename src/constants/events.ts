@@ -12,5 +12,7 @@ export const EVENT = {
     NEW_MESSAGE: "new_message",
     READ_REPORT: "read_report",
     READ_UPDATE: "message_read_update",
+    SYNC_OFFINE_MESSAGES: "sync_offine_messages",
+    UPDATE_SYNCUSERMSGSEQNUM: "update_sync_user_msg_seq_num",
   },
 } as const;
