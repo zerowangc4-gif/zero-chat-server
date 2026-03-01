@@ -89,20 +89,10 @@ export async function removeReadOfflineMessages(
 ) {
   const offlineKey = getOfflineKey(userId);
 
-  // 1. 打印前端传回来的、你准备去匹配的字符串
-  console.log("🔍 [前端传回] 准备匹配的消息字符串:", message);
-
-  // 2. 打印 Redis 里真实存在的、最接近的一条消息
-  // 我们取最后一条（分值最高的一条）来看看它长什么样
-  const redisMessages = await redis.zRange(offlineKey, -1, -1);
-  console.log("📦 [Redis存储] 目前最后一条消息原文:", redisMessages[0]);
-
-  // 3. 执行匹配
   const score = await redis.zScore(offlineKey, message);
-  console.log("📊 [匹配结果] 得到的 Score 是:", score);
-
+  socket.emit(EVENT.CHAT.UPDATE_SYNCUSERMSGSEQNUM, score, message);
   if (score !== null) {
     await redis.zRemRangeByScore(offlineKey, 0, score);
-    socket.emit(EVENT.CHAT.UPDATE_SYNCUSERMSGSEQNUM, score);
+    socket.emit(EVENT.CHAT.UPDATE_SYNCUSERMSGSEQNUM, score, message);
   }
 }
