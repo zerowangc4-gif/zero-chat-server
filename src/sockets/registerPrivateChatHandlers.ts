@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { SocketType, ChatMessagePayload } from "./types";
+import { SocketType, ChatMessage, ReceiveMessage, MessageAck } from "./types";
 import {
   getSessionSeqNum,
   getSyncUserMsgSeqNum,
@@ -8,11 +8,12 @@ import {
   getUserRoomId,
 } from "./roomHelper";
 import { redis } from "@/config";
-import { getErrorMessage } from "@/utils";
+
+import { EVENT, MESSAGE_STATUS } from "@/constants";
 export async function saveOfflineMessage(
   toId: string,
   syncUserMsgSeqNum: number,
-  payload: ChatMessagePayload,
+  payload: ChatMessage,
 ) {
   const offlineKey = getOfflineKey(toId);
   await redis
@@ -24,19 +25,19 @@ export async function saveOfflineMessage(
 }
 
 export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
-  socket.on("send_message", async (data, ack) => {
+  socket.on(EVENT.CHAT.SEND_MESSAGE, async (data: ReceiveMessage, ack: MessageAck) => {
     const { toId, content, clientMsgId } = data;
     const fromId = socket.userId as string;
     const sessionSeqNum = await getSessionSeqNum(fromId, toId);
 
     const syncUserMsgSeqNum = await getSyncUserMsgSeqNum(toId);
 
-    const payload: ChatMessagePayload = {
+    const payload: ChatMessage = {
       chatId: toId,
-      formId: fromId,
+      fromId: fromId,
       id: clientMsgId,
       content: content,
-      status: "sentToServer",
+      status: MESSAGE_STATUS.SENT_TO_SERVER,
       sessionSeqNum: sessionSeqNum,
       timestamp: Date.now(),
     };
@@ -50,7 +51,7 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
       const userRoomId = getUserRoomId(payload.chatId);
       io.to(userRoomId)
         .timeout(2000)
-        .emit("new_message", payload, async (err: unknown, res: ChatMessagePayload[]) => {
+        .emit(EVENT.CHAT.NEW_MESSAGE, payload, async (err: unknown, res: ChatMessage[]) => {
           if (err) {
             ack(payload);
           } else {
@@ -63,41 +64,14 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
     }
   });
 
-  socket.on("read_report", async data => {
+  socket.on(EVENT.CHAT.READ_REPORT, async data => {
     const { fromId, lastSessionSeqNum } = data;
 
     const userRoomId = getUserRoomId(fromId);
 
-    console.log(userRoomId);
-
-    io.to(userRoomId).emit("message_read_update", {
+    io.to(userRoomId).emit(EVENT.CHAT.READ_UPDATE, {
       chatId: socket.userId,
       lastSessionSeqNum: lastSessionSeqNum,
     });
-  });
-
-  socket.on("sync_offline_messages", async (data, ack) => {
-    try {
-      const { lastSyncUserMsgSeqNum } = data;
-
-      const myId = socket.userId;
-
-      if (!myId) return ack({ status: "failed", message: "Unverified" });
-
-      const offlineKey = getOfflineKey(myId);
-
-      const messages = await redis.zRangeByScore(offlineKey, `(${lastSyncUserMsgSeqNum}`, "+inf");
-
-      if (!messages || messages.length === 0) {
-        return ack({ status: "delivered", data: [], message: "Already Received message" });
-      }
-
-      const formatMessages = messages.map(msg => JSON.parse(msg));
-
-      ack({ status: "delivered", data: formatMessages });
-    } catch (error) {
-      const message = getErrorMessage(error);
-      ack({ status: "failed", message: message });
-    }
   });
 }

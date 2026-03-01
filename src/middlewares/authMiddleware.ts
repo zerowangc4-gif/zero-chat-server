@@ -1,7 +1,8 @@
 import jwt, { TokenExpiredError } from "jsonwebtoken";
 import { AppError, AuthRequest } from "@/types";
 import { UserInfoType } from "@/sockets";
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
+import { AT_EXPIRE } from "@/constants";
 
 export const authMiddleware = (req: AuthRequest, _res: Response, next: NextFunction) => {
   try {
@@ -24,7 +25,7 @@ export const authMiddleware = (req: AuthRequest, _res: Response, next: NextFunct
     next();
   } catch (err: unknown) {
     if (err instanceof TokenExpiredError) {
-      return next(new Error("at_expire"));
+      return next(new Error(AT_EXPIRE));
     }
     next(new Error("invalid_token"));
   }

@@ -1,6 +1,7 @@
 import jwt, { TokenExpiredError } from "jsonwebtoken";
 import { AppError, TokenType } from "@/types";
 import { User } from "@/models";
+import { RT_EXPIRE } from "@/constants";
 export function verifyToken(token: string) {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
@@ -22,7 +23,7 @@ export function verifyToken(token: string) {
     };
   } catch (error: unknown) {
     if (error instanceof TokenExpiredError) {
-      throw new AppError(401, "rt_expire");
+      throw new AppError(401, RT_EXPIRE);
     }
     if (error instanceof TokenExpiredError) {
       throw new AppError(401, "invalid_token");

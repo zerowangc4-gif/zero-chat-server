@@ -11,10 +11,11 @@ import {
   clearUserOnlineValue,
 } from "./roomHelper";
 import { AppError } from "@/types";
+import { EVENT } from "@/constants";
 export function setupSocketHandlers(ioInstance: Server) {
   ioInstance.use(authMiddleware);
 
-  ioInstance.on("connection", async (socket: SocketType) => {
+  ioInstance.on(EVENT.SYSTEM.CONNECT, async (socket: SocketType) => {
     const userId = socket.userId;
 
     try {
@@ -29,11 +30,11 @@ export function setupSocketHandlers(ioInstance: Server) {
 
       registerPrivateChatHandlers(ioInstance, socket);
 
-      socket.on("client_heartbeat", async () => {
+      socket.on(EVENT.SYSTEM.HEARTBEAT, async () => {
         await refreshUserOnlineStatus(userId, socket.id);
       });
 
-      socket.on("disconnect", async () => {
+      socket.on(EVENT.SYSTEM.DISCONNECT, async () => {
         await clearUserOnlineValue(userId, socket.id);
       });
     } catch (error: unknown) {

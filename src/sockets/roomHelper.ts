@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import { SocketType } from "./types";
 import { redis } from "@/config";
-
+import { EVENT } from "@/constants";
 type IdType = string | number;
 
 export function getUserOnlineKey(userId: IdType) {
@@ -25,10 +25,7 @@ export async function removeUserOnlineValue(
 ) {
   const oldOnlineValue = await getUserOnlineValue(userId);
   if (oldOnlineValue && oldOnlineValue !== currentOnlineId) {
-    ioInstance.to(oldOnlineValue).emit("force_logout", {
-      reason: "account_logged_in_elsewhere",
-      time: Date.now(),
-    });
+    ioInstance.to(oldOnlineValue).emit(EVENT.SYSTEM.FORCE_LOGOUT);
   }
 }
 export async function clearUserOnlineValue(userId: IdType, currentOnlineId: string) {

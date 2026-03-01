@@ -1,5 +1,6 @@
 import jwt, { TokenExpiredError } from "jsonwebtoken";
 import { SocketType, NextFunction, UserInfoType } from "./types";
+import { AT_EXPIRE } from "@/constants";
 
 export async function authMiddleware(socket: SocketType, next: NextFunction) {
   try {
@@ -18,7 +19,7 @@ export async function authMiddleware(socket: SocketType, next: NextFunction) {
     next();
   } catch (err: unknown) {
     if (err instanceof TokenExpiredError) {
-      return next(new Error("at_expire"));
+      return next(new Error(AT_EXPIRE));
     }
     if (err instanceof Error) {
       return next(new Error("invalid_token"));
