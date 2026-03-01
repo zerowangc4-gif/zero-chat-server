@@ -93,6 +93,8 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
           }
         },
       );
+    } else {
+      socket.emit(EVENT.CHAT.SYNC_OFFINE_MESSAGES, []);
     }
   });
 }
