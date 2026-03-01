@@ -84,15 +84,13 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
     if (rawMessages && rawMessages.length > 0) {
       const messages = rawMessages.map(m => JSON.parse(m));
 
-      socket.emit(
-        EVENT.CHAT.SYNC_OFFINE_MESSAGES,
-        messages,
-        async (err: unknown, res: ChatMessage) => {
+      socket
+        .timeout(5000)
+        .emit(EVENT.CHAT.SYNC_OFFINE_MESSAGES, messages, async (err: unknown, res: ChatMessage) => {
           if (!err && res) {
             await removeReadOfflineMessages(socket, userId, JSON.stringify(res));
           }
-        },
-      );
+        });
     } else {
       socket.emit(EVENT.CHAT.SYNC_OFFINE_MESSAGES, []);
     }

@@ -90,7 +90,7 @@ export async function removeReadOfflineMessages(
   const offlineKey = getOfflineKey(userId);
 
   const score = await redis.zScore(offlineKey, message);
-  socket.emit(EVENT.CHAT.UPDATE_SYNCUSERMSGSEQNUM, score, message);
+
   if (score !== null) {
     await redis.zRemRangeByScore(offlineKey, 0, score);
     socket.emit(EVENT.CHAT.UPDATE_SYNCUSERMSGSEQNUM, score, message);
