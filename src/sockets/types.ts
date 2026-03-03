@@ -1,5 +1,5 @@
 import { ExtendedError, Socket } from "socket.io";
-import { MessageStatus } from "@/constants";
+import { MessageStatus, MessageType } from "@/constants";
 
 export type NextFunction = (err?: ExtendedError) => void;
 
@@ -9,19 +9,16 @@ export interface SocketType extends Socket {
 export interface UserInfoType {
   address: string;
 }
-export interface ReceiveMessage {
-  toId: string;
-  content: string;
-  clientMsgId: string;
-}
-export interface ChatMessage {
-  chatId: string;
-  fromId: string;
+
+export interface Message {
   id: string;
+  fromId: string;
+  toId: string;
+  sessionSeqNum: number;
   content: string;
-  status: MessageStatus;
-  sessionSeqNum?: number;
   timestamp: number;
+  type: MessageType;
+  status: MessageStatus;
 }
 
-export type MessageAck = (data: ChatMessage) => void;
+export type MessageAck = (data: Message) => void;

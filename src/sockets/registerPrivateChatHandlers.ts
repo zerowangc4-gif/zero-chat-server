@@ -1,64 +1,65 @@
 import { Server } from "socket.io";
-import { SocketType, ChatMessage, ReceiveMessage, MessageAck } from "./types";
+import { SocketType, Message, MessageAck } from "./types";
 import {
   getSessionSeqNum,
   getSyncUserMsgSeqNum,
   getUserOnlineValue,
   getOfflineKey,
   getUserRoomId,
-  getLatestSyncUserMsgSeqNum,
   removeReadOfflineMessages,
 } from "./roomHelper";
 import { redis } from "@/config";
 
 import { EVENT, MESSAGE_STATUS } from "@/constants";
-export async function saveOfflineMessage(toId: string, payload: ChatMessage) {
+export async function saveOfflineMessage(toId: string, message: Message) {
   const offlineKey = getOfflineKey(toId);
   const syncUserMsgSeqNum = await getSyncUserMsgSeqNum(toId);
   await redis
     .multi()
-    .zAdd(offlineKey, { score: syncUserMsgSeqNum, value: JSON.stringify(payload) })
+    .zAdd(offlineKey, { score: syncUserMsgSeqNum, value: JSON.stringify(message) })
     .zRemRangeByRank(offlineKey, 0, -1001)
     .expire(offlineKey, 3 * 24 * 3600)
     .exec();
 }
 
 export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
-  socket.on(EVENT.CHAT.SEND_MESSAGE, async (data: ReceiveMessage, ack: MessageAck) => {
-    const { toId, content, clientMsgId } = data;
+  socket.on(EVENT.CHAT.SEND_MESSAGE, async (data: Message, ack: MessageAck) => {
+    const { toId, content, id, type } = data;
     const fromId = socket.userId as string;
     const sessionSeqNum = await getSessionSeqNum(fromId, toId);
 
-    const payload: ChatMessage = {
-      chatId: toId,
+    const message: Message = {
+      id: id,
       fromId: fromId,
-      id: clientMsgId,
-      content: content,
-      status: MESSAGE_STATUS.SENT_TO_SERVER,
+      toId: toId,
       sessionSeqNum: sessionSeqNum,
+      content: content,
       timestamp: Date.now(),
+      type: type,
+      status: MESSAGE_STATUS.SENT_TO_SERVER,
     };
 
     try {
-      await saveOfflineMessage(toId, payload);
-      const onlineValue = await getUserOnlineValue(payload.chatId);
+      await saveOfflineMessage(toId, message);
+
+      const onlineValue = await getUserOnlineValue(toId);
 
       if (!onlineValue) {
-        return ack(payload);
+        return ack(message);
       }
 
-      const userRoomId = getUserRoomId(payload.chatId);
+      const userRoomId = getUserRoomId(toId);
       io.to(userRoomId)
         .timeout(2000)
-        .emit(EVENT.CHAT.NEW_MESSAGE, payload, async (err: unknown, res: ChatMessage[]) => {
+        .emit(EVENT.CHAT.NEW_MESSAGE, message, async (err: unknown, res: Message[]) => {
           if (err) {
-            ack(payload);
+            ack(message);
           } else {
-            ack(res[0] || payload);
+            ack(res[0] || message);
           }
         });
     } catch (error: unknown) {
-      ack(payload);
+      ack(message);
     }
   });
 
@@ -84,15 +85,15 @@ export function registerPrivateChatHandlers(io: Server, socket: SocketType) {
     if (rawMessages && rawMessages.length > 0) {
       const messages = rawMessages.map(m => JSON.parse(m));
 
-      socket.emit(
-        EVENT.CHAT.SYNC_OFFINE_MESSAGES,
-        messages,
-        async (err: unknown, res: ChatMessage) => {
-          if (!err && res) {
-            await removeReadOfflineMessages(socket, userId, JSON.stringify(res));
+      socket
+        .timeout(5000)
+        .emit(EVENT.CHAT.SYNC_OFFINE_MESSAGES, messages, async (err: unknown, message: Message) => {
+          if (!err && message) {
+            await removeReadOfflineMessages(socket, userId, JSON.stringify(message));
           }
-        },
-      );
+        });
+    } else {
+      socket.emit(EVENT.CHAT.SYNC_OFFINE_MESSAGES, []);
     }
   });
 }
