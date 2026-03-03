@@ -14,7 +14,7 @@ export interface Message {
   id: string;
   fromId: string;
   toId: string;
-  sessionSeqNum: number;
+  sessionSeqNum: number | string;
   content: string;
   timestamp: number;
   type: MessageType;

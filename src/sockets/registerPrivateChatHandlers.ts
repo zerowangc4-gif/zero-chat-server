@@ -11,6 +11,7 @@ import {
 import { redis } from "@/config";
 
 import { EVENT, MESSAGE_STATUS } from "@/constants";
+
 export async function saveOfflineMessage(toId: string, message: Message) {
   const offlineKey = getOfflineKey(toId);
   const syncUserMsgSeqNum = await getSyncUserMsgSeqNum(toId);
