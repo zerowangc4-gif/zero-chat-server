@@ -40,9 +40,9 @@ export function listener(io: Server, socket: SocketType) {
   });
 
   // 接受用户已读回执，更新状态后转发好友
-  socket.on(EVENT.chat.readReport, async (data, ack) => {
+  socket.on(EVENT.chat.readReport, async data => {
     const { toId, lastSessionSeqNum } = data;
-    ack(data);
+
     await sendReadReport(io, socket, toId, lastSessionSeqNum);
   });
 }
