@@ -10,18 +10,16 @@ export function sendMessage(
   message: Message,
   ack: (message: Message) => void,
 ) {
-  return new Promise((_resolve, reject) => {
-    const userRoomId = getUserRoomId(toId);
-    io.to(userRoomId)
-      .timeout(2000)
-      .emit(EVENT.chat.chatMessage, message, async (err: unknown, res: Message[]) => {
-        if (err) {
-          reject(message);
-        } else {
-          ack(res[0] || message);
-        }
-      });
-  });
+  const userRoomId = getUserRoomId(toId);
+  io.to(userRoomId)
+    .timeout(2000)
+    .emit(EVENT.chat.chatMessage, message, async (err: unknown, res: Message[]) => {
+      if (err) {
+        ack(message);
+      } else {
+        ack(res[0] || message);
+      }
+    });
 }
 
 // 转发已读回执

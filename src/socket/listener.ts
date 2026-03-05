@@ -33,7 +33,7 @@ export function listener(io: Server, socket: SocketType) {
         return ack(message);
       }
 
-      await sendMessage(io, toId, message, ack);
+      sendMessage(io, toId, message, ack);
     } catch (error: unknown) {
       ack(message);
     }
