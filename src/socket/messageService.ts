@@ -36,7 +36,7 @@ export async function setUserOnlineValue(userId: IdType, currentOnlineId: string
   await redis.set(onlineKey, currentOnlineId, { EX: 60 });
 }
 
-// 删除已读信息
+// 删除下线用户
 export async function removeUserOnlineValue(
   userId: IdType,
   currentOnlineId: string,
