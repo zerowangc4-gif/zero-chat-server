@@ -4,7 +4,7 @@ import {
   getLatestSyncUserMsgSeqNum,
   refreshUserOnlineStatus,
   removeReadOfflineMessages,
-} from "./MessageService";
+} from "./messageService";
 export function singalListener(socket: SocketType) {
   const userId = socket.userId as string;
 

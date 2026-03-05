@@ -10,7 +10,7 @@ import {
   joinUserRoom,
   removeUserOnlineValue,
   setUserOnlineValue,
-} from "./MessageService";
+} from "./messageService";
 
 export function SocketClient(ioInstance: Server) {
   ioInstance.use(authSocketMiddleware);

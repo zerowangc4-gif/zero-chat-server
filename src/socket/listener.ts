@@ -1,11 +1,6 @@
 import { Server } from "socket.io";
 import { SocketType, Message } from "./types";
-import {
-  getSessionSeqNum,
-  saveOfflineMessage,
-  getUserOnlineValue,
-  getUserRoomId,
-} from "./MessageService";
+import { getSessionSeqNum, saveOfflineMessage, getUserOnlineValue } from "./messageService";
 import { sendMessage, sendReadReport } from "./emitter";
 import { EVENT } from "./events";
 

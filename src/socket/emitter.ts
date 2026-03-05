@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { getUserRoomId } from "./MessageService";
+import { getUserRoomId } from "./messageService";
 import { EVENT } from "./events";
 import { Message, SocketType } from "./types";
 
