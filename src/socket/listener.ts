@@ -7,7 +7,7 @@ import { EVENT } from "./events";
 import { MESSAGE_STATUS } from "@/constants";
 
 export function listener(io: Server, socket: SocketType) {
-  // 接收新的私人消息，转发给好友
+  // 接收新的私人消息，然后转发给好友
   socket.on(EVENT.chat.chatMessage, async (data: Message, ack) => {
     const { toId, content, id, type } = data;
     const fromId = socket.userId as string;
