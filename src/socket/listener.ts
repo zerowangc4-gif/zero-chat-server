@@ -41,7 +41,7 @@ export function listener(io: Server, socket: SocketType) {
 
   // 接受用户已读回执，更新状态后转发好友
   socket.on(EVENT.chat.readReport, async data => {
-    const { fromId, lastSessionSeqNum } = data;
-    await sendReadReport(io, socket, fromId, lastSessionSeqNum);
+    const { toId, lastSessionSeqNum } = data;
+    await sendReadReport(io, socket, toId, lastSessionSeqNum);
   });
 }

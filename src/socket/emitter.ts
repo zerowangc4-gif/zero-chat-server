@@ -28,10 +28,10 @@ export function sendMessage(
 export async function sendReadReport(
   io: Server,
   socket: SocketType,
-  fromId: string,
+  toId: string,
   lastSessionSeqNum: number,
 ) {
-  const userRoomId = getUserRoomId(fromId);
+  const userRoomId = getUserRoomId(toId);
 
   io.to(userRoomId).emit(EVENT.chat.readReport, {
     chatId: socket.userId,
