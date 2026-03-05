@@ -1,8 +1,8 @@
 import jwt, { TokenExpiredError } from "jsonwebtoken";
-import { SocketType, NextFunction, UserInfoType } from "./types";
+import { SocketType, NextFunction, UserInfoType } from "@/socket";
 import { AT_EXPIRE } from "@/constants";
 
-export async function authMiddleware(socket: SocketType, next: NextFunction) {
+export async function authSocketMiddleware(socket: SocketType, next: NextFunction) {
   try {
     const token = socket.handshake.auth.token;
     const secret = process.env.JWT_SECRET;

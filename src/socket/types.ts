@@ -20,5 +20,3 @@ export interface Message {
   type: MessageType;
   status: MessageStatus;
 }
-
-export type MessageAck = (data: Message) => void;

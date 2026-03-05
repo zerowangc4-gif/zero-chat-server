@@ -1,6 +1,6 @@
 import jwt, { TokenExpiredError } from "jsonwebtoken";
 import { AppError, AuthRequest } from "@/types";
-import { UserInfoType } from "@/sockets";
+import { UserInfoType } from "@/socket";
 import { Response, NextFunction } from "express";
 import { AT_EXPIRE } from "@/constants";
 
