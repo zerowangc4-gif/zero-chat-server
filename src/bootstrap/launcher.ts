@@ -1,6 +1,6 @@
 import http from "http";
 import { mysql, redis, setupRedisAdapter } from "@/config";
-import { initSocket, setupSocketHandlers } from "@/sockets";
+import { initSocket, SocketClient } from "@/socket";
 
 export async function init(server: http.Server) {
   await mysql.query("SELECT 1");
@@ -11,7 +11,7 @@ export async function init(server: http.Server) {
 
   await setupRedisAdapter(ioInstance);
 
-  setupSocketHandlers(ioInstance);
+  SocketClient(ioInstance);
 
   console.log("基础设施初始化成功");
 }
