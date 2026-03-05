@@ -1,6 +1,6 @@
 import http from "http";
 import { mysql, redis, setupRedisAdapter } from "@/config";
-import { initSocket, SocketClient } from "@/socket2";
+import { initSocket, SocketClient } from "@/socket";
 
 export async function init(server: http.Server) {
   await mysql.query("SELECT 1");

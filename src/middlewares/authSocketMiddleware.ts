@@ -1,5 +1,5 @@
 import jwt, { TokenExpiredError } from "jsonwebtoken";
-import { SocketType, NextFunction, UserInfoType } from "@/socket2";
+import { SocketType, NextFunction, UserInfoType } from "@/socket";
 import { AT_EXPIRE } from "@/constants";
 
 export async function authSocketMiddleware(socket: SocketType, next: NextFunction) {
