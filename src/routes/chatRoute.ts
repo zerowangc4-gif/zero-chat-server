@@ -1,7 +1,9 @@
 import { Router } from "express";
-import { getOffineChatMessages } from "@/controllers";
+import { getOffineChatMessages, sendMessage } from "@/controllers";
 
 const router = Router();
+
+router.post("/sendMessage", sendMessage);
 
 router.post("/getOffineChatMessages", getOffineChatMessages);
 
