@@ -2,15 +2,7 @@ import { Server } from "socket.io";
 import { authSocketMiddleware } from "@/middlewares";
 import { SocketType } from "./types";
 import { getErrorMessage } from "@/utils";
-import { AppError } from "@/types";
-import { listener } from "./listener";
-import { singalListener } from "./singalListener";
-import {
-  clearUserOnlineValue,
-  joinUserRoom,
-  removeUserOnlineValue,
-  setUserOnlineValue,
-} from "./messageService";
+import { getUserRoomId } from "@/metadata";
 
 export function SocketClient(ioInstance: Server) {
   ioInstance.use(authSocketMiddleware);
@@ -18,25 +10,17 @@ export function SocketClient(ioInstance: Server) {
   ioInstance.on("connect", async (socket: SocketType) => {
     const userId = socket.userId;
 
+    if (!userId) return;
+
     try {
-      if (!userId) {
-        throw new AppError(400, "Invalid userId format");
-      }
-      await removeUserOnlineValue(userId, socket.id, ioInstance);
-
-      await setUserOnlineValue(userId, socket.id);
-
-      await joinUserRoom(userId, socket);
-
-      listener(ioInstance, socket);
-      singalListener(socket);
+      const userRoomId = getUserRoomId(userId);
+      await socket.join(userRoomId);
 
       socket.on("disconnect", async () => {
-        await clearUserOnlineValue(userId, socket.id);
+        console.log(`用户: ${userRoomId} 离线了`);
       });
     } catch (error: unknown) {
-      const message = getErrorMessage(error);
-      console.error("连接初始化失败:", message);
+      console.error("连接初始化失败:", error);
       socket.disconnect();
     }
   });
