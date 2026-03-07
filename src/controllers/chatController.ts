@@ -4,7 +4,6 @@ import {
   handleSendMessage,
   handlesyncChatMessages,
   handleDeleteHavedSyncMessages,
-  handlesyncMessagesStatus,
 } from "@/services";
 import { AppError, AuthRequest } from "@/types";
 import { catchAsync } from "@/utils";
