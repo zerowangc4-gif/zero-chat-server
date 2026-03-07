@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import { Message, SocketType } from "./types";
 import { redis } from "@/config";
 import { EVENT } from "./events";
-import { updateSyncUserChatMessageNum } from "./emitter";
+
 type IdType = string | number;
 
 // 个人信息缓存
@@ -121,6 +121,5 @@ export async function removeReadOfflineMessages(
 
   if (score !== null) {
     await redis.zRemRangeByScore(offlineKey, 0, score);
-    await updateSyncUserChatMessageNum(socket, score);
   }
 }

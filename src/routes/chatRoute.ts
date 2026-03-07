@@ -1,10 +1,12 @@
 import { Router } from "express";
-import { getOffineChatMessages, sendMessage } from "@/controllers";
+import { syncChatMessages, sendMessage, deleteHavedSyncMessages } from "@/controllers";
 
 const router = Router();
 
 router.post("/sendMessage", sendMessage);
 
-router.post("/getOffineChatMessages", getOffineChatMessages);
+router.post("/syncChatMessages", syncChatMessages);
+
+router.post("/deleteHavedSyncMessages", deleteHavedSyncMessages);
 
 export default router;
