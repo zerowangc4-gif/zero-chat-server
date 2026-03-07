@@ -1,9 +1,7 @@
 import { Server } from "socket.io";
 import { authSocketMiddleware } from "@/middlewares";
-import { SocketType } from "./types";
-import { getErrorMessage } from "@/utils";
 import { getUserRoomId } from "@/metadata";
-
+import { SocketType } from "./types";
 export function SocketClient(ioInstance: Server) {
   ioInstance.use(authSocketMiddleware);
 
