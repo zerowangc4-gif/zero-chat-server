@@ -6,6 +6,7 @@ import {
   getUserOfflineMessageKey,
   getLastMessageUserkey,
   getUserRoomId,
+  getHaveReadUserMessageKey,
 } from "@/metadata";
 import { MESSAGE_STATUS } from "@/constants";
 import { Message, io, EVENT } from "@/socket";
@@ -45,13 +46,10 @@ export async function handleSendMessage(message: Message): Promise<Message> {
   return result;
 }
 
-export async function handlesyncChatMessages(
-  address: string,
-  syncUserMsgSeqNum: number,
-): Promise<Message[]> {
+export async function handlesyncChatMessages(address: string): Promise<Message[]> {
   const userOfflineMessageKey = getUserOfflineMessageKey(address);
 
-  const messagesJson = await redis.zRange(userOfflineMessageKey, syncUserMsgSeqNum + 1, "+inf", {
+  const messagesJson = await redis.zRange(userOfflineMessageKey, 0, "+inf", {
     BY: "SCORE",
   });
 
@@ -79,6 +77,8 @@ export async function handlesyncChatMessages(
         io.to(userRoomId).emit(EVENT.chat.syncMessageStatus, {
           chatId: address,
           id: item.id,
+          sessionSeqNum: item.sessionSeqNum,
+          status: MESSAGE_STATUS.DELIVERED,
         });
       }
     });
@@ -91,14 +91,45 @@ export async function handlesyncChatMessages(
   return messages;
 }
 
-export async function handleDeleteHavedSyncMessages(message: Message): Promise<number> {
-  const userOfflineMessageKey = getUserOfflineMessageKey(message.fromId);
+export async function handleDeleteHavedSyncMessages(message: Message): Promise<void> {
+  const userOfflineMessageKey = getUserOfflineMessageKey(message.toId);
 
   const score = await redis.zScore(userOfflineMessageKey, JSON.stringify(message));
 
   if (score !== null) {
     await redis.zRemRangeByScore(userOfflineMessageKey, 0, score);
-    return score;
   }
-  return 0;
+}
+
+export async function handleSyncHavedReadLatestMessage(message: Message): Promise<Message> {
+  const toUserHaveReadKey = getHaveReadUserMessageKey(message.toId);
+  const fromHaveReadKey = getHaveReadUserMessageKey(message.fromId);
+  redis.hSet(toUserHaveReadKey, fromHaveReadKey, JSON.stringify(message));
+
+  const fromUserLastMessageKey = getLastMessageUserkey(message.fromId);
+  const toUserLastMessageKey = getLastMessageUserkey(message.toId);
+
+  const messageJson = await redis.hGet(fromUserLastMessageKey, toUserLastMessageKey);
+
+  if (messageJson) {
+    const lastReadMessage: Message = JSON.parse(messageJson);
+    if (lastReadMessage.id === message.id) {
+      redis.hSet(
+        fromUserLastMessageKey,
+        toUserLastMessageKey,
+        JSON.stringify({ ...message, status: MESSAGE_STATUS.READ }),
+      );
+    }
+  }
+
+  if (io) {
+    const userRoomId = getUserRoomId(message.fromId);
+    io.to(userRoomId).emit(EVENT.chat.syncMessageStatus, {
+      chatId: message.toId,
+      id: message.id,
+      sessionSeqNum: message.sessionSeqNum,
+      status: MESSAGE_STATUS.READ,
+    });
+  }
+  return message;
 }

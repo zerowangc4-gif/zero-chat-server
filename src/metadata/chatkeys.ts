@@ -13,3 +13,8 @@ export function getLastMessageUserkey(userId: string): string {
 export function getUserOfflineMessageKey(userId: string): string {
   return `zeroChat:offlineMessage:user:${userId}`;
 }
+
+//记录我读好友的信息的位置
+export function getHaveReadUserMessageKey(userId: string): string {
+  return `zeroChat:haveReadMessage:user:${userId}`;
+}
