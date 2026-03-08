@@ -46,7 +46,10 @@ export async function handleSendMessage(message: Message): Promise<Message> {
   return result;
 }
 
-export async function handlesyncChatMessages(address: string): Promise<Message[]> {
+export async function handlesyncChatMessages(
+  address: string,
+  activeChatId: string,
+): Promise<Message[]> {
   const userOfflineMessageKey = getUserOfflineMessageKey(address);
 
   const messagesJson = await redis.zRange(userOfflineMessageKey, 0, "+inf", {
@@ -70,7 +73,13 @@ export async function handlesyncChatMessages(address: string): Promise<Message[]
       const fromUserLastMessageKey = getLastMessageUserkey(item.fromId);
       const toUserLastMessageKey = getLastMessageUserkey(item.toId);
 
-      transaction.hSet(fromUserLastMessageKey, toUserLastMessageKey, JSON.stringify(item));
+      const status = activeChatId === fromId ? MESSAGE_STATUS.READ : MESSAGE_STATUS.DELIVERED;
+
+      transaction.hSet(
+        fromUserLastMessageKey,
+        toUserLastMessageKey,
+        JSON.stringify({ ...item, status }),
+      );
 
       if (io) {
         const userRoomId = getUserRoomId(fromId);
@@ -78,7 +87,7 @@ export async function handlesyncChatMessages(address: string): Promise<Message[]
           chatId: address,
           id: item.id,
           sessionSeqNum: item.sessionSeqNum,
-          status: MESSAGE_STATUS.DELIVERED,
+          status: status,
         });
       }
     });
@@ -114,7 +123,7 @@ export async function handleSyncHavedReadLatestMessage(message: Message): Promis
   if (messageJson) {
     const lastReadMessage: Message = JSON.parse(messageJson);
     if (lastReadMessage.id === message.id) {
-      redis.hSet(
+      await redis.hSet(
         fromUserLastMessageKey,
         toUserLastMessageKey,
         JSON.stringify({ ...message, status: MESSAGE_STATUS.READ }),

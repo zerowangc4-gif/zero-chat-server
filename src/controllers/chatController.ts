@@ -55,8 +55,8 @@ export const syncChatMessages = catchAsync(
     if (!req.address) {
       throw new AppError(400, "Missing required parameters");
     }
-
-    const messages = await handlesyncChatMessages(req.address);
+    const { activeChatId } = req.body;
+    const messages = await handlesyncChatMessages(req.address, activeChatId);
 
     res.status(200).json({
       success: true,
