@@ -5,7 +5,7 @@ export const errorHandler = (error: AppError, req: Request, res: Response, _next
   const statusCode = error.code || 500;
   const message = error.code ? error.message : "Internal Server Error";
   if (statusCode === 500) {
-    console.error("error originalUrl", error);
+    console.error("error originalUrl", req.originalUrl);
   }
   res.status(statusCode).json({
     success: false,
