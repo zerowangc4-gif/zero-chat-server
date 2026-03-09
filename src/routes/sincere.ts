@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { wechatLogin } from "@/controllers";
+import { wechatLogin } from "@/api";
 
 const router = Router();
 
