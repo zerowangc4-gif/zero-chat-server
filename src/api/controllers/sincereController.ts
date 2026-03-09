@@ -1,5 +1,5 @@
-import { Response, NextFunction } from "express";
-import { AppError, Request } from "@/types";
+import { Response, NextFunction, Request } from "express";
+import { AppError } from "@/types";
 import { catchAsync } from "@/utils";
 import { wechatClient } from "@/api/authClient";
 
