@@ -5,6 +5,7 @@ const router = Router();
 
 router.post("/login", login);
 router.post("/getNonce", getNonce);
+
 router.post("/refreshToken", handleRefreshToken);
 router.post("/tokenRotate", handleTokenRotate);
 
