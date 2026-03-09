@@ -21,7 +21,6 @@ jobs:
           source: "./*, !.git"
           target: "/home/ubuntu/zero-chat"
           rm: false
-          strip_components: 0
 
       - name: Remote Deploy
         uses: appleboy/ssh-action@v1.0.3
