@@ -18,7 +18,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          source: "./*, !.git, !node_modules, !data, !database"
+          source: "./*, !.git"
           target: "/home/ubuntu/zero-chat"
           rm: false
           strip_components: 0
