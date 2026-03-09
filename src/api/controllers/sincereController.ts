@@ -24,7 +24,7 @@ export const wechatLogin = catchAsync(async (req: Request, res: Response, _next:
 
   res.status(200).json({
     success: true,
-    message: isNewUser ? "注册并登录成功" : "登录成功",
+    message: "算是成功吧",
     data: {
       ...wxData,
     },
