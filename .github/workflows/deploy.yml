@@ -18,10 +18,10 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          source: "./*, !.git"
+          source: "./*, !.git, !node_modules, !data, !database"
           target: "/home/ubuntu/zero-chat"
           rm: false
-          tar_exec: "tar --exclude=.git --exclude=node_modules --exclude=data -cvzf"
+          strip_components: 0
 
       - name: Remote Deploy
         uses: appleboy/ssh-action@v1.0.3
