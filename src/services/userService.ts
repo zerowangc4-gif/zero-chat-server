@@ -8,7 +8,7 @@ export async function handleUpdateAvatar(address: string, avatarSeed: string): P
   }
   const usersKey = getAllUsersKey();
 
-  const userJson = await redis.hget(usersKey, address);
+  const userJson = await redis.hGet(usersKey, address);
 
   if (!userJson || typeof userJson !== "string") {
     throw new AppError(404, "User not found");
