@@ -10,7 +10,7 @@ services:
         "--appendonly",
         "yes",
         "--appendfsync",
-        "always",
+        "everysec",
         "--aof-rewrite-incremental-fsync",
         "yes",
         "--maxmemory-policy",
