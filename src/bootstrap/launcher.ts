@@ -1,10 +1,9 @@
 import http from "http";
-import { mysql, redis, setupRedisAdapter } from "@/config";
+
+import { redis, setupRedisAdapter } from "@/config";
 import { initSocket, SocketClient } from "@/socket";
 
 export async function init(server: http.Server) {
-  await mysql.query("SELECT 1");
-
   await redis.connect();
 
   const ioInstance = initSocket(server);
@@ -27,9 +26,6 @@ export async function shutdown(server: http.Server, signal: string) {
   try {
     await new Promise(resolve => server.close(resolve));
     console.log("HTTP 服务器已关闭");
-
-    await mysql.end();
-    console.log("MySQL 连接池已释放");
 
     await redis.quit();
     console.log("Redis 连接已断开");
