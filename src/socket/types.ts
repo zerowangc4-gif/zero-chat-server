@@ -20,3 +20,10 @@ export interface Message {
   type: MessageType;
   status: MessageStatus;
 }
+
+export interface UserInfo {
+  address: string;
+  publicKey: string;
+  username: string;
+  avatarSeed: string;
+}

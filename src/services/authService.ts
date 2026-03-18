@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { verifyMessage } from "ethers";
-import { findByAddress, createUser } from "@/models";
+import { getAllUsersKey } from "@/metadata";
 import { AppError, TokenType } from "@/types";
 import { getAuthSlogan, getAuthNonceKey } from "@/utils";
 import { redis } from "@/config";
@@ -20,31 +20,35 @@ export async function loginOrRegister(
     throw new AppError(400, "Verification code expired");
   }
   const authSlogan = getAuthSlogan(nonce);
+
   const recoveredAddress = verifyMessage(authSlogan, signature);
+
   if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
     throw new AppError(401, "Authentication failed");
   }
 
   await redis.del(authNonceKey);
 
-  let user = await findByAddress(address);
-  if (!user) {
-    user = await createUser(username, publicKey, address);
-  }
-  const payload = {
-    id: user.id,
-    address: user.address,
+  const userInfo = {
+    address: address,
+    publicKey: publicKey,
+    username: username,
+    avatarSeed: publicKey,
   };
+  const usersKey = getAllUsersKey();
+
+  await redis.hSet(usersKey, address, JSON.stringify(userInfo));
+
+  const payload = {
+    address: userInfo.address,
+  };
+
   const accessToken = jwt.sign(payload, secret, { expiresIn: "5h" });
   const refreshToken = jwt.sign(payload, secret, { expiresIn: "30d" });
 
   return {
     user: {
-      id: user.id,
-      username: user.username,
-      address: user.address,
-      publicKey: user.public_key,
-      avatarSeed: user.avatar_seed,
+      ...userInfo,
     },
     accessToken,
     refreshToken,
@@ -73,7 +77,7 @@ export async function getTokens(token: string, address: string, signature: strin
   }
 
   await redis.del(authNonceKey);
-  const payload: TokenType = { id: decoded.id, address: decoded.address };
+  const payload: TokenType = { address: decoded.address };
   const newAccessToken = jwt.sign(payload, secret, {
     expiresIn: "5h",
   });

@@ -1,1 +1,1 @@
-sudo docker logs zero-chat-app --tail 50
+ docker compose logs -f  zero-chat-app
