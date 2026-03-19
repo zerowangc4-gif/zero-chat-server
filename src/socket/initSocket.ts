@@ -8,7 +8,7 @@ export const initSocket = (server: http.Server) => {
     cors: {
       origin: process.env.ALLOWED_ORIGINS || "*",
     },
-    transports: ["websocket", "polling"],
+    transports: ["websocket"],
     maxHttpBufferSize: 1e6,
   });
 
