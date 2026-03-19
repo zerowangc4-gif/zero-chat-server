@@ -23,4 +23,5 @@ RUN npm install --production && \
 
 EXPOSE 3000
 
-CMD ["pm2-runtime", "start", "dist/index.js", "--name", "zero-chat-api"]
+
+CMD ["pm2-runtime", "start", "dist/index.js", "-i", "max", "--name", "zero-chat-api"]
