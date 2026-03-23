@@ -10,6 +10,8 @@ export const initSocket = (server: http.Server) => {
     },
     transports: ["websocket"],
     maxHttpBufferSize: 1e6,
+    pingInterval: 10000,
+    pingTimeout: 10000,
   });
 
   return io;
