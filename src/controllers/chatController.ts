@@ -38,7 +38,7 @@ export const sendMessage = catchAsync(
       status,
     } as Message;
 
-    const result = await handleSendMessage(message);
+    const result = await handleSendMessage(req.address, message);
 
     res.status(200).json({
       success: true,
@@ -95,7 +95,7 @@ export const deleteHavedSyncMessages = catchAsync(
       status,
     } as Message;
 
-    await handleDeleteHavedSyncMessages(message);
+    await handleDeleteHavedSyncMessages(req.address, message);
 
     res.status(200).json({
       success: true,
@@ -134,7 +134,7 @@ export const syncHavedReadLatestMessage = catchAsync(
       status,
     } as Message;
 
-    const LatestMessage: Message = await handleSyncHavedReadLatestMessage(message);
+    const LatestMessage: Message = await handleSyncHavedReadLatestMessage(req.address, message);
 
     res.status(200).json({
       success: true,

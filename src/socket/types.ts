@@ -27,3 +27,10 @@ export interface UserInfo {
   username: string;
   avatarSeed: string;
 }
+
+export interface TargetMsg {
+  chatId: string;
+  id: string;
+  sessionSeqNum: number;
+  status: MessageStatus;
+}

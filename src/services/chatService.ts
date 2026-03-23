@@ -4,30 +4,24 @@ import {
   getSessionSeqNum,
   getSyncUserMsgSeqNum,
   getUserOfflineMessageKey,
-  getLastMessageUserkey,
   getUserRoomId,
-  getHaveReadUserMessageKey,
+  getUserMessageStatusKey,
 } from "@/metadata";
 import { MESSAGE_STATUS } from "@/constants";
-import { Message, io, EVENT } from "@/socket";
+import { Message, io, EVENT, TargetMsg } from "@/socket";
 
-export async function handleSendMessage(message: Message): Promise<Message> {
-  const sessionSeqNum = await getSessionSeqNum(message.fromId, message.toId, message.sessionSeqNum);
-  const result = {
-    ...message,
-    sessionSeqNum: sessionSeqNum,
-    timestamp: Date.now(),
-    status: MESSAGE_STATUS.SENT_TO_SERVER,
-  };
+export async function handleSendMessage(address: string, message: Message): Promise<Message> {
+  const sessionSeqNum = await getSessionSeqNum(address, message.toId, message.sessionSeqNum);
+  message.sessionSeqNum = sessionSeqNum;
+  message.timestamp = Date.now();
+  message.status = MESSAGE_STATUS.SENT_TO_SERVER;
 
   const userOfflineMessageKey = getUserOfflineMessageKey(message.toId);
 
   const syncUserMsgSeqNum = await getSyncUserMsgSeqNum(message.toId);
 
-  const messageJson = JSON.stringify(result);
+  const messageJson = JSON.stringify(message);
 
-  const fromUserLastMessageKey = getLastMessageUserkey(message.fromId);
-  const toUserLastMessageKey = getLastMessageUserkey(message.toId);
   const userRoomId = getUserRoomId(message.toId);
 
   await redis
@@ -35,15 +29,13 @@ export async function handleSendMessage(message: Message): Promise<Message> {
     .zAdd(userOfflineMessageKey, { score: syncUserMsgSeqNum, value: messageJson })
     .zRemRangeByRank(userOfflineMessageKey, 0, -1001)
     .expire(userOfflineMessageKey, 3 * 24 * 3600)
-    .hSet(fromUserLastMessageKey, toUserLastMessageKey, JSON.stringify(result))
     .exec();
 
   if (io) {
-    // 信号发出，通知接收方
     io.to(userRoomId).emit(EVENT.chat.chatMessage);
   }
 
-  return result;
+  return message;
 }
 
 export async function handlesyncChatMessages(
@@ -51,57 +43,45 @@ export async function handlesyncChatMessages(
   activeChatId: string,
 ): Promise<Message[]> {
   const userOfflineMessageKey = getUserOfflineMessageKey(address);
-
+  const latestMessages = new Map<string, Message>();
+  const transaction = redis.multi();
   const messagesJson = await redis.zRange(userOfflineMessageKey, 0, "+inf", {
     BY: "SCORE",
   });
 
   const messages: Message[] = messagesJson.map((item: string) => {
-    return { ...JSON.parse(item), status: MESSAGE_STATUS.DELIVERED };
+    const message = JSON.parse(item);
+    const status = activeChatId === message.fromId ? MESSAGE_STATUS.READ : MESSAGE_STATUS.DELIVERED;
+    message.status = status;
+    latestMessages.set(message.fromId, message);
+    return message;
   });
-
-  if (messages.length > 0) {
-    const transaction = redis.multi();
-
-    const latestMessages = new Map<string, Message>();
-
-    messages.forEach(item => {
-      latestMessages.set(item.fromId, item);
-    });
-
-    latestMessages.forEach((item, fromId) => {
-      const fromUserLastMessageKey = getLastMessageUserkey(item.fromId);
-      const toUserLastMessageKey = getLastMessageUserkey(item.toId);
-
-      const status = activeChatId === fromId ? MESSAGE_STATUS.READ : MESSAGE_STATUS.DELIVERED;
-
-      transaction.hSet(
-        fromUserLastMessageKey,
-        toUserLastMessageKey,
-        JSON.stringify({ ...item, status }),
-      );
-
-      if (io) {
-        const userRoomId = getUserRoomId(fromId);
-        io.to(userRoomId).emit(EVENT.chat.syncMessageStatus, {
-          chatId: address,
-          id: item.id,
-          sessionSeqNum: item.sessionSeqNum,
-          status: status,
-        });
-      }
-    });
-
-    transaction.exec().catch(error => {
-      console.error("批量更新对方账本失败:", error);
-    });
-  }
+  latestMessages.forEach((item, fromId) => {
+    const targetMsg: TargetMsg = {
+      chatId: address,
+      id: item.id,
+      sessionSeqNum: parseInt(String(item.sessionSeqNum), 10),
+      status: item.status,
+    };
+    const userMessageStatusKey = getUserMessageStatusKey(fromId);
+    transaction.hSet(userMessageStatusKey, address, JSON.stringify(targetMsg));
+    if (io) {
+      const userRoomId = getUserRoomId(fromId);
+      io.to(userRoomId).emit(EVENT.chat.syncMessageStatus, targetMsg);
+    }
+  });
+  transaction.exec().catch(error => {
+    console.error("批量更新对方账本失败:", error);
+  });
 
   return messages;
 }
 
-export async function handleDeleteHavedSyncMessages(message: Message): Promise<void> {
-  const userOfflineMessageKey = getUserOfflineMessageKey(message.toId);
+export async function handleDeleteHavedSyncMessages(
+  address: string,
+  message: Message,
+): Promise<void> {
+  const userOfflineMessageKey = getUserOfflineMessageKey(address);
 
   const score = await redis.zScore(userOfflineMessageKey, JSON.stringify(message));
 
@@ -109,36 +89,22 @@ export async function handleDeleteHavedSyncMessages(message: Message): Promise<v
     await redis.zRemRangeByScore(userOfflineMessageKey, 0, score);
   }
 }
-
-export async function handleSyncHavedReadLatestMessage(message: Message): Promise<Message> {
-  const toUserHaveReadKey = getHaveReadUserMessageKey(message.toId);
-  const fromHaveReadKey = getHaveReadUserMessageKey(message.fromId);
-  redis.hSet(toUserHaveReadKey, fromHaveReadKey, JSON.stringify(message));
-
-  const fromUserLastMessageKey = getLastMessageUserkey(message.fromId);
-  const toUserLastMessageKey = getLastMessageUserkey(message.toId);
-
-  const messageJson = await redis.hGet(fromUserLastMessageKey, toUserLastMessageKey);
-
-  if (messageJson) {
-    const lastReadMessage: Message = JSON.parse(messageJson);
-    if (lastReadMessage.id === message.id) {
-      await redis.hSet(
-        fromUserLastMessageKey,
-        toUserLastMessageKey,
-        JSON.stringify({ ...message, status: MESSAGE_STATUS.READ }),
-      );
-    }
-  }
-
+export async function handleSyncHavedReadLatestMessage(
+  address: string,
+  message: Message,
+): Promise<Message> {
+  message.status = MESSAGE_STATUS.READ;
+  const userMessageStatusKey = getUserMessageStatusKey(message.fromId);
+  await redis.hSet(userMessageStatusKey, address, JSON.stringify(message));
+  const targetMsg: TargetMsg = {
+    chatId: address,
+    id: message.id,
+    sessionSeqNum: parseInt(String(message.sessionSeqNum), 10),
+    status: message.status,
+  };
   if (io) {
     const userRoomId = getUserRoomId(message.fromId);
-    io.to(userRoomId).emit(EVENT.chat.syncMessageStatus, {
-      chatId: message.toId,
-      id: message.id,
-      sessionSeqNum: message.sessionSeqNum,
-      status: MESSAGE_STATUS.READ,
-    });
+    io.to(userRoomId).emit(EVENT.chat.syncMessageStatus, targetMsg);
   }
   return message;
 }
