@@ -5,6 +5,7 @@ import {
   handlesyncChatMessages,
   handleDeleteHavedSyncMessages,
   handleSyncHavedReadLatestMessage,
+  handleSyncMessageStatus,
 } from "@/services";
 import { AppError, AuthRequest } from "@/types";
 import { catchAsync } from "@/utils";
@@ -140,6 +141,23 @@ export const syncHavedReadLatestMessage = catchAsync(
       success: true,
       message: "sync have read  message successful",
       data: LatestMessage,
+    });
+  },
+);
+
+// 同步离线时的信息状态
+export const syncMessageStatus = catchAsync(
+  async (req: AuthRequest, res: Response, _next: NextFunction) => {
+    if (!req.address) {
+      throw new AppError(400, "Missing required parameters");
+    }
+
+    const targetMsgs = await handleSyncMessageStatus(req.address);
+
+    res.status(200).json({
+      success: true,
+      message: "Sync messages successful",
+      data: targetMsgs,
     });
   },
 );

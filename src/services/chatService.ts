@@ -108,3 +108,17 @@ export async function handleSyncHavedReadLatestMessage(
   }
   return message;
 }
+export async function handleSyncMessageStatus(address: string): Promise<TargetMsg[]> {
+  const userMessageStatusKey = getUserMessageStatusKey(address);
+  const messageStatuses = await redis.hGetAll(userMessageStatusKey);
+  if (!messageStatuses || Object.keys(messageStatuses).length == 0) {
+    return [];
+  }
+  const targetMsgs: TargetMsg[] = Object.values(messageStatuses).map(targetMsgJson =>
+    JSON.parse(targetMsgJson),
+  );
+
+  await redis.del(userMessageStatusKey);
+
+  return targetMsgs;
+}
