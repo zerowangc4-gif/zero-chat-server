@@ -1,24 +1,27 @@
 import jwt from "jsonwebtoken";
-import { verifyMessage } from "ethers";
-import { getAllUsersKey } from "@/metadata";
-import { AppError, TokenType } from "@/types";
-import { getAuthSlogan, getAuthNonceKey } from "@/utils";
 import { redis } from "@/config";
-export async function loginOrRegister(
+import { verifyMessage } from "ethers";
+import { AppError, TokenType } from "@/types";
+import { getAuthSlogan, getAllUsersKey } from "@/metadata";
+import { UserInfo } from "@/socket";
+export async function handleRegisterAndLogin(
   address: string,
   publicKey: string,
   username: string,
   signature: string,
 ) {
   const secret = process.env.JWT_SECRET;
+
   if (!secret) {
     throw new AppError(500, "Server configuration error");
   }
-  const authNonceKey = getAuthNonceKey(address);
-  const nonce = await redis.get(authNonceKey);
+
+  const nonce = await redis.get(address);
+
   if (!nonce) {
     throw new AppError(400, "Verification code expired");
   }
+
   const authSlogan = getAuthSlogan(nonce);
 
   const recoveredAddress = verifyMessage(authSlogan, signature);
@@ -27,33 +30,32 @@ export async function loginOrRegister(
     throw new AppError(401, "Authentication failed");
   }
 
-  await redis.del(authNonceKey);
-
-  const userInfo = {
-    address: address,
-    publicKey: publicKey,
-    username: username,
-    avatarSeed: publicKey,
-  };
-  const usersKey = getAllUsersKey();
-
-  await redis.hSet(usersKey, address, JSON.stringify(userInfo));
+  await redis.del(address);
 
   const payload = {
-    address: userInfo.address,
+    address: address,
   };
 
   const accessToken = jwt.sign(payload, secret, { expiresIn: "5h" });
   const refreshToken = jwt.sign(payload, secret, { expiresIn: "30d" });
 
+  const usersKey = getAllUsersKey();
+
+  const userInfo: UserInfo = {
+    address: address,
+    publicKey: publicKey,
+    username: username,
+    avatarSeed: publicKey,
+  };
+
+  await redis.hSet(usersKey, address, JSON.stringify(userInfo));
+
   return {
-    user: {
-      ...userInfo,
-    },
     accessToken,
     refreshToken,
   };
 }
+
 export async function getTokens(token: string, address: string, signature: string) {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
@@ -65,18 +67,18 @@ export async function getTokens(token: string, address: string, signature: strin
     throw new AppError(400, "Invalid token format");
   }
 
-  const authNonceKey = getAuthNonceKey(address);
-  const nonce = await redis.get(authNonceKey);
+  const nonce = await redis.get(address);
   if (!nonce) {
     throw new AppError(400, "Verification code expired");
   }
   const authSlogan = getAuthSlogan(nonce);
+
   const recoveredAddress = verifyMessage(authSlogan, signature);
   if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
     throw new AppError(400, "Authentication failed");
   }
 
-  await redis.del(authNonceKey);
+  await redis.del(address);
   const payload: TokenType = { address: decoded.address };
   const newAccessToken = jwt.sign(payload, secret, {
     expiresIn: "5h",

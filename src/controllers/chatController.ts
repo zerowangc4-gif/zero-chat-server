@@ -6,6 +6,7 @@ import {
   handleDeleteHavedSyncMessages,
   handleSyncHavedReadLatestMessage,
   handleSyncMessageStatus,
+  handleSearchUserResult,
 } from "@/services";
 import { AppError, AuthRequest } from "@/types";
 import { catchAsync } from "@/utils";
@@ -158,6 +159,25 @@ export const syncMessageStatus = catchAsync(
       success: true,
       message: "Sync messages successful",
       data: targetMsgs,
+    });
+  },
+);
+
+// 添加好友时，搜索用户信息
+export const searchUserResult = catchAsync(
+  async (req: AuthRequest, res: Response, _next: NextFunction) => {
+    const { address } = req.body;
+
+    if (!address) {
+      throw new AppError(400, "Missing required parameters");
+    }
+
+    const userInfo = await handleSearchUserResult(address);
+
+    res.status(200).json({
+      success: true,
+      message: "search user info successful",
+      data: userInfo,
     });
   },
 );

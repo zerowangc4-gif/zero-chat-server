@@ -1,26 +1,29 @@
 import { Request, Response, NextFunction } from "express";
 
-import { loginOrRegister, getTokens } from "@/services";
+import { handleRegisterAndLogin, getTokens } from "@/services";
+import { getAuthSlogan } from "@/metadata";
 import { AppError } from "@/types";
-import { catchAsync, getAuthSlogan, getAuthNonceKey, verifyToken } from "@/utils";
+import { catchAsync, verifyToken } from "@/utils";
 import crypto from "crypto";
 import { redis } from "@/config";
 
-export const login = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const { address, publicKey, username, signature } = req.body;
+export const registerAndLogin = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { address, publicKey, username, signature } = req.body;
 
-  if (!address || !publicKey || !username || !signature) {
-    throw new AppError(400, "Missing required parameters");
-  }
+    if (!address || !publicKey || !username || !signature) {
+      throw new AppError(400, "Missing required parameters");
+    }
 
-  const result = await loginOrRegister(address, publicKey, username, signature);
+    const result = await handleRegisterAndLogin(address, publicKey, username, signature);
 
-  res.status(200).json({
-    success: true,
-    message: "Authentication successful",
-    data: result,
-  });
-});
+    res.status(200).json({
+      success: true,
+      message: "Authentication successful",
+      data: result,
+    });
+  },
+);
 
 export const getNonce = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { address } = req.body;
@@ -29,8 +32,7 @@ export const getNonce = catchAsync(async (req: Request, res: Response, next: Nex
   }
   const nonce = crypto.randomInt(100000, 999999).toString();
   const authSlogan = getAuthSlogan(nonce);
-  const authNonceKey = getAuthNonceKey(address);
-  await redis.set(authNonceKey, nonce, { EX: 300 });
+  await redis.set(address, nonce, { EX: 300 });
   res.status(200).json({
     success: true,
     data: authSlogan,

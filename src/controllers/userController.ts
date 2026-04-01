@@ -1,12 +1,12 @@
 import { Response, NextFunction } from "express";
 
-import { handleUpdateAvatar, handleGetContacts } from "@/services";
+import { handleUpdateAvatar } from "@/services";
 import { AppError, AuthRequest } from "@/types";
 import { catchAsync } from "@/utils";
 
-export const updateAvatar = catchAsync(
+export const updateUserInfo = catchAsync(
   async (req: AuthRequest, res: Response, _next: NextFunction) => {
-    const { avatarSeed } = req.body;
+    const { avatarSeed,username } = req.body;
     const address = req.address;
     if (!address || !avatarSeed) {
       throw new AppError(400, "Missing required parameters");
@@ -18,23 +18,6 @@ export const updateAvatar = catchAsync(
       success: true,
       message: "Authentication successful",
       data: avatarSeed,
-    });
-  },
-);
-
-export const getContacts = catchAsync(
-  async (req: AuthRequest, res: Response, _next: NextFunction) => {
-    const address = req.address;
-    if (!address) {
-      throw new AppError(400, "Missing required parameters");
-    }
-
-    const users = await handleGetContacts(address);
-
-    res.status(200).json({
-      success: true,
-      message: "Authentication successful",
-      data: users,
     });
   },
 );

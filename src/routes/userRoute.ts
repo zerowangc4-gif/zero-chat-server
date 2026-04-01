@@ -1,10 +1,8 @@
 import { Router } from "express";
-import { updateAvatar, getContacts } from "@/controllers";
+import { updateUserInfo } from "@/controllers";
 
 const router = Router();
 
-router.get("/getContacts", getContacts);
-
-router.post("/updateAvatar", updateAvatar);
+router.post("/updateUserInfo", updateUserInfo);
 
 export default router;

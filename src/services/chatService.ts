@@ -6,9 +6,11 @@ import {
   getUserOfflineMessageKey,
   getUserRoomId,
   getUserMessageStatusKey,
+  getAllUsersKey,
 } from "@/metadata";
 import { MESSAGE_STATUS } from "@/constants";
-import { Message, io, EVENT, TargetMsg } from "@/socket";
+import { Message, io, EVENT, TargetMsg, UserInfo } from "@/socket";
+import { AppError } from "@/types";
 
 export async function handleSendMessage(address: string, message: Message): Promise<Message> {
   const sessionSeqNum = await getSessionSeqNum(address, message.toId, message.sessionSeqNum);
@@ -71,7 +73,7 @@ export async function handlesyncChatMessages(
     }
   });
   transaction.exec().catch(error => {
-    console.error("批量更新对方账本失败:", error);
+    console.error(error);
   });
 
   return messages;
@@ -121,4 +123,18 @@ export async function handleSyncMessageStatus(address: string): Promise<TargetMs
   await redis.del(userMessageStatusKey);
 
   return targetMsgs;
+}
+
+export async function handleSearchUserResult(address: string): Promise<UserInfo> {
+  const usersKey = getAllUsersKey();
+
+  const userInfoJson = await redis.hGet(usersKey, address);
+
+  if (!userInfoJson) {
+    throw new AppError(404, "User not found");
+  }
+
+  const userInfo: UserInfo = JSON.parse(userInfoJson);
+
+  return userInfo;
 }

@@ -22,30 +22,3 @@ export async function handleUpdateAvatar(address: string, avatarSeed: string): P
     await redis.hSet(usersKey, address, JSON.stringify(userInfo));
   }
 }
-
-export async function handleGetContacts(address: string): Promise<UserInfo[]> {
-  if (!address) {
-    throw new AppError(400, "address cannot be empty");
-  }
-
-  const usersKey = getAllUsersKey();
-
-  const allUsers = await redis.hGetAll(usersKey);
-
-  if (!allUsers || Object.keys(allUsers).length === 0) {
-    return [];
-  }
-
-  const users: UserInfo[] = [];
-
-  Object.entries(allUsers).forEach(([itemAddress, userJson]) => {
-    if (userJson && typeof userJson === "string") {
-      if (itemAddress !== address) {
-        const user = JSON.parse(userJson) as UserInfo;
-        users.push(user);
-      }
-    }
-  });
-
-  return users;
-}

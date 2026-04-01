@@ -5,6 +5,7 @@ import {
   deleteHavedSyncMessages,
   syncHavedReadLatestMessage,
   syncMessageStatus,
+  searchUserResult,
 } from "@/controllers";
 
 const router = Router();
@@ -18,5 +19,7 @@ router.post("/deleteHavedSyncMessages", deleteHavedSyncMessages);
 router.post("/syncHavedReadLatestMessage", syncHavedReadLatestMessage);
 
 router.post("/syncMessageStatus", syncMessageStatus);
+
+router.post("/searchUserResult", searchUserResult);
 
 export default router;
