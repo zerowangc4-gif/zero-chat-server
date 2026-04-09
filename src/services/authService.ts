@@ -41,18 +41,25 @@ export async function handleRegisterAndLogin(
 
   const usersKey = getAllUsersKey();
 
-  const userInfo: UserInfo = {
+  let userInfo: UserInfo = {
     address: address,
     publicKey: publicKey,
     username: username,
     avatarSeed: publicKey,
   };
 
+  const userInfoJson = await redis.hGet(usersKey, address);
+
+  userInfo = {
+    ...userInfo,
+    ...JSON.parse(userInfoJson || "{}"),
+  };
+
   await redis.hSet(usersKey, address, JSON.stringify(userInfo));
 
   return {
-    accessToken,
-    refreshToken,
+    userInfo: userInfo,
+    tokens: { accessToken, refreshToken },
   };
 }
 
