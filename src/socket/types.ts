@@ -1,13 +1,15 @@
 import { ExtendedError, Socket } from "socket.io";
 import { MessageStatus, MessageType } from "@/constants";
 
-export type NextFunction = (err?: ExtendedError) => void;
-
-export interface SocketType extends Socket {
-  userId?: string;
+interface TextContent {
+  text: string;
 }
-export interface UserInfoType {
-  address: string;
+
+type ContentType = TextContent;
+
+export enum ChatType {
+  SINGLE = "single",
+  GROUP = "group",
 }
 
 export interface Message {
@@ -15,10 +17,19 @@ export interface Message {
   fromId: string;
   toId: string;
   sessionSeqNum: number | string;
-  content: string;
+  content: ContentType;
   timestamp: number;
   type: MessageType;
   status: MessageStatus;
+}
+export type NextFunction = (err?: ExtendedError) => void;
+
+export interface SocketType extends Socket {
+  userId?: string;
+}
+
+export interface UserInfoType {
+  address: string;
 }
 
 export interface UserInfo {
@@ -26,6 +37,17 @@ export interface UserInfo {
   publicKey: string;
   username: string;
   avatarSeed: string;
+}
+
+export interface GroupBasicInfo {
+  seq: number;
+  ownerId: string;
+  address: string;
+  publicKey: string;
+  groupName: string;
+  avatarSeed: string;
+  groupIntro: string;
+  timestamp: number;
 }
 
 export interface TargetMsg {
