@@ -106,9 +106,9 @@ export async function handleSyncHavedReadLatestMessage(
 ): Promise<Message> {
   message.status = MESSAGE_STATUS.READ;
   const userMessageStatusKey = getUserMessageStatusKey(message.fromId);
-  await redis.hSet(userMessageStatusKey, address, JSON.stringify(message));
+  await redis.hSet(userMessageStatusKey, message.toId, JSON.stringify(message));
   const targetMsg: TargetMsg = {
-    chatId: address,
+    chatId: message.toId,
     id: message.id,
     sessionSeqNum: parseInt(String(message.sessionSeqNum), 10),
     status: message.status,
