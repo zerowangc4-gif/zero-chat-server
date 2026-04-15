@@ -8,6 +8,7 @@ export const EVENT = {
 
   chat: {
     chatMessage: "chat_message",
+    groupChatMessage: "group_chat_message",
     syncMessageStatus: "sync_message_status",
   },
 };

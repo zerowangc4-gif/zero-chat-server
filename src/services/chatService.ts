@@ -7,13 +7,22 @@ import {
   getUserRoomId,
   getUserMessageStatusKey,
   getAllUsersKey,
+  getAllGroupsKey,
+  getMyJoinGroupsKey,
+  getMyCreateGroupsKey,
+  getGroupMemberKey,
+  getGroupOwnerMemberKey,
+  getGroupOfflineMessageKey,
+  getGroupRoomId,
+  getSyncGroupMsgSeqNum,
+  DISTRIBUTE_LUA,
 } from "@/metadata";
 import { MESSAGE_STATUS } from "@/constants";
-import { Message, io, EVENT, TargetMsg, UserInfo } from "@/socket";
+import { Message, GroupBasicInfo, io, EVENT, TargetMsg, UserInfo } from "@/socket";
 import { AppError } from "@/types";
 
 export async function handleSendMessage(address: string, message: Message): Promise<Message> {
-  const sessionSeqNum = await getSessionSeqNum(address, message.toId, message.sessionSeqNum);
+  const sessionSeqNum = await getSessionSeqNum(message.sessionSeqNum, message.toId, address);
   message.sessionSeqNum = sessionSeqNum;
   message.timestamp = Date.now();
   message.status = MESSAGE_STATUS.SENT_TO_SERVER;
@@ -40,7 +49,7 @@ export async function handleSendMessage(address: string, message: Message): Prom
   return message;
 }
 
-export async function handlesyncChatMessages(
+export async function handleSyncChatMessages(
   address: string,
   activeChatId: string,
 ): Promise<Message[]> {
@@ -137,4 +146,95 @@ export async function handleSearchUserResult(address: string): Promise<UserInfo>
   const userInfo: UserInfo = JSON.parse(userInfoJson);
 
   return userInfo;
+}
+
+export async function handleCreateGroup(groupBasicInfo: GroupBasicInfo): Promise<void> {
+  const allGroupsKey = getAllGroupsKey();
+  const myJoinGroupsKey = getMyJoinGroupsKey(groupBasicInfo.ownerId);
+  const myCreateGroupsKey = getMyCreateGroupsKey(groupBasicInfo.ownerId);
+  const groupMemberKey = getGroupMemberKey(groupBasicInfo.address);
+  const groupOwnerMemberKey = getGroupOwnerMemberKey(groupBasicInfo.address);
+
+  const pipeline = redis.multi();
+
+  pipeline.hSet(myJoinGroupsKey, groupBasicInfo.address, groupBasicInfo.address);
+  pipeline.hSet(myCreateGroupsKey, groupBasicInfo.address, groupBasicInfo.address);
+  pipeline.hSet(groupMemberKey, groupBasicInfo.ownerId, groupBasicInfo.ownerId);
+  pipeline.hSet(groupOwnerMemberKey, groupBasicInfo.ownerId, groupBasicInfo.ownerId);
+  pipeline.hSet(allGroupsKey, groupBasicInfo.address, JSON.stringify(groupBasicInfo));
+  await pipeline.exec();
+}
+
+export async function handleSendGroupMessage(message: Message): Promise<Message> {
+  const sessionSeqNum = await getSessionSeqNum(message.sessionSeqNum, message.toId);
+  message.sessionSeqNum = sessionSeqNum;
+  message.timestamp = Date.now();
+  message.status = MESSAGE_STATUS.SENT_TO_SERVER;
+
+  const groupMemberKey = getGroupMemberKey(message.toId);
+
+  const memberIds = await redis.hKeys(groupMemberKey);
+
+  if (memberIds.length === 0) return message;
+
+  const groupOfflineMessageKeys = memberIds.map((id: string) => getGroupOfflineMessageKey(id));
+
+  const syncGroupMsgSeqNum = await getSyncGroupMsgSeqNum(message.toId);
+
+  const messageJson = JSON.stringify(message);
+
+  await redis.eval(DISTRIBUTE_LUA, {
+    keys: groupOfflineMessageKeys,
+    arguments: [messageJson, syncGroupMsgSeqNum.toString(), (3 * 24 * 3600).toString()],
+  });
+
+  if (io) {
+    const groupRoomId = getGroupRoomId(message.toId);
+    io.to(groupRoomId).emit(EVENT.chat.groupChatMessage, message);
+  }
+
+  return message;
+}
+
+export async function handleSyncGroupChatMessages(
+  address: string,
+  activeChatId: string,
+): Promise<Message[]> {
+  const groupOfflineMessageKey = getGroupOfflineMessageKey(address);
+
+  const latestMessages = new Map<string, Message>();
+
+  const transaction = redis.multi();
+
+  const messagesJson = await redis.zRange(groupOfflineMessageKey, 0, "+inf", {
+    BY: "SCORE",
+  });
+
+  const messages: Message[] = messagesJson.map((item: string) => {
+    const message = JSON.parse(item);
+    const status = activeChatId === message.toId ? MESSAGE_STATUS.READ : MESSAGE_STATUS.DELIVERED;
+    message.status = status;
+    latestMessages.set(message.toId, message);
+    return message;
+  });
+  latestMessages.forEach((item, toId) => {
+    const targetMsg: TargetMsg = {
+      chatId: toId,
+      id: item.id,
+      sessionSeqNum: parseInt(String(item.sessionSeqNum), 10),
+      status: item.status,
+    };
+    const userMessageStatusKey = getUserMessageStatusKey(item.fromId);
+
+    transaction.hSet(userMessageStatusKey, toId, JSON.stringify(targetMsg));
+    if (io) {
+      const userRoomId = getUserRoomId(item.fromId);
+      io.to(userRoomId).emit(EVENT.chat.syncMessageStatus, targetMsg);
+    }
+  });
+  transaction.exec().catch(error => {
+    console.error(error);
+  });
+
+  return messages;
 }

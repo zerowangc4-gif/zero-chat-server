@@ -8,10 +8,6 @@ export const MESSAGE_STATUS = {
 
 export const MESSAGE_TYPE = {
   TEXT: "text",
-  IMAGE: "image",
-  FILE: "file",
-  VOICE: "voice",
-  VIDEO: "video",
 } as const;
 
 export type MessageStatus = (typeof MESSAGE_STATUS)[keyof typeof MESSAGE_STATUS];
