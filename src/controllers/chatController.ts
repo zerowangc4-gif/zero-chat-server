@@ -132,7 +132,7 @@ export const syncHavedReadLatestMessage = catchAsync(
     const message = {
       id,
       fromId,
-      toId: req.address,
+      toId,
       sessionSeqNum,
       content,
       timestamp,
