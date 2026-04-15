@@ -163,6 +163,12 @@ export async function handleCreateGroup(groupBasicInfo: GroupBasicInfo): Promise
   pipeline.hSet(groupOwnerMemberKey, groupBasicInfo.ownerId, groupBasicInfo.ownerId);
   pipeline.hSet(allGroupsKey, groupBasicInfo.address, JSON.stringify(groupBasicInfo));
   await pipeline.exec();
+
+  if (io) {
+    const groupRoomId = getGroupRoomId(groupBasicInfo.address);
+    const userRoomId = getUserRoomId(groupBasicInfo.ownerId);
+    io.in(userRoomId).socketsJoin(groupRoomId);
+  }
 }
 
 export async function handleSendGroupMessage(message: Message): Promise<Message> {
@@ -237,4 +243,32 @@ export async function handleSyncGroupChatMessages(
   });
 
   return messages;
+}
+export async function handleJoinGroup(address: string, groupId: string): Promise<GroupBasicInfo> {
+  const allGroupsKey = getAllGroupsKey();
+  const myJoinGroupsKey = getMyJoinGroupsKey(address);
+  const groupMemberKey = getGroupMemberKey(groupId);
+
+  const pipeline = redis.multi();
+  pipeline.hSet(myJoinGroupsKey, groupId, groupId);
+  pipeline.hSet(groupMemberKey, address, address);
+  pipeline.hGet(allGroupsKey, groupId);
+
+  const results = await pipeline.exec();
+
+  if (!results) {
+    throw new Error("Redis transaction failed");
+  }
+
+  const groupBasicInfoJson = results[2] as unknown as string;
+
+  const groupBasicInfo = JSON.parse(groupBasicInfoJson || "{}");
+
+  if (io) {
+    const groupRoomId = getGroupRoomId(groupId);
+    const userRoomId = getUserRoomId(address);
+    io.in(userRoomId).socketsJoin(groupRoomId);
+  }
+
+  return groupBasicInfo;
 }

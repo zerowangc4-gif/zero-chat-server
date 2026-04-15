@@ -10,6 +10,7 @@ import {
   handleCreateGroup,
   handleSendGroupMessage,
   handleSyncGroupChatMessages,
+  handleJoinGroup,
 } from "@/services";
 import { getLastGroupSeqNum } from "@/metadata";
 import { AppError, AuthRequest } from "@/types";
@@ -286,7 +287,7 @@ export const sendGroupMessage = catchAsync(
 );
 
 // 同步群信息
-export const SyncGroupChatMessages = catchAsync(
+export const syncGroupChatMessages = catchAsync(
   async (req: AuthRequest, res: Response, _next: NextFunction) => {
     if (!req.address) {
       throw new AppError(400, "Missing required parameters");
@@ -298,6 +299,25 @@ export const SyncGroupChatMessages = catchAsync(
       success: true,
       message: "Sync messages successful",
       data: messages,
+    });
+  },
+);
+
+// 加入聊天群
+export const joinGroup = catchAsync(
+  async (req: AuthRequest, res: Response, _next: NextFunction) => {
+    const { groupId } = req.body;
+    if (!req.address || groupId) {
+      throw new AppError(400, "Missing required parameters");
+    }
+    const { activeChatId } = req.body;
+
+    const result = await handleJoinGroup(req.address, groupId);
+
+    res.status(200).json({
+      success: true,
+      message: "join group successful",
+      data: result,
     });
   },
 );

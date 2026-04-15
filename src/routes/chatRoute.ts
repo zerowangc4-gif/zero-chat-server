@@ -9,7 +9,8 @@ import {
   getGroupSeqNum,
   createGruop,
   sendGroupMessage,
-  SyncGroupChatMessages,
+  syncGroupChatMessages,
+  joinGroup,
 } from "@/controllers";
 
 const router = Router();
@@ -32,6 +33,8 @@ router.post("/createGruop", createGruop);
 
 router.post("/sendGroupMessage", sendGroupMessage);
 
-router.post("/SyncGroupChatMessages", SyncGroupChatMessages);
+router.post("/syncGroupChatMessages", syncGroupChatMessages);
+
+router.post("/joinGroup", joinGroup);
 
 export default router;
