@@ -207,13 +207,13 @@ export const getGroupSeqNum = catchAsync(
 );
 
 // 创建群组
-export const createGruop = catchAsync(
+export const createGroup = catchAsync(
   async (req: AuthRequest, res: Response, _next: NextFunction) => {
-    const { seq, ownerId, address, publicKey, groupName, avatarSeed, groupIntro, timestamp } =
+    const { seqNum, ownerId, address, publicKey, groupName, avatarSeed, groupIntro, timestamp } =
       req.body;
 
     if (
-      !seq ||
+      !seqNum ||
       !ownerId ||
       !address ||
       !publicKey ||
@@ -226,7 +226,7 @@ export const createGruop = catchAsync(
       throw new AppError(400, "Missing required parameters");
     }
     const groupBasicInfo = {
-      seq,
+      seqNum,
       ownerId: req.address,
       address,
       publicKey,
@@ -236,12 +236,12 @@ export const createGruop = catchAsync(
       timestamp,
     } as GroupBasicInfo;
 
-    await handleCreateGroup(groupBasicInfo);
+    const result = await handleCreateGroup(groupBasicInfo);
 
     res.status(200).json({
       success: true,
       message: "create group  is successful",
-      data: null,
+      data: result,
     });
   },
 );

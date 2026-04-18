@@ -40,7 +40,7 @@ export interface UserInfo {
 }
 
 export interface GroupBasicInfo {
-  seq: number;
+  seqNum: number;
   ownerId: string;
   address: string;
   publicKey: string;
