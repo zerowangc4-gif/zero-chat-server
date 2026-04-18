@@ -148,7 +148,7 @@ export async function handleSearchUserResult(address: string): Promise<UserInfo>
   return userInfo;
 }
 
-export async function handleCreateGroup(groupBasicInfo: GroupBasicInfo): Promise<void> {
+export async function handleCreateGroup(groupBasicInfo: GroupBasicInfo): Promise<GroupBasicInfo> {
   const allGroupsKey = getAllGroupsKey();
   const myJoinGroupsKey = getMyJoinGroupsKey(groupBasicInfo.ownerId);
   const myCreateGroupsKey = getMyCreateGroupsKey(groupBasicInfo.ownerId);
@@ -169,6 +169,7 @@ export async function handleCreateGroup(groupBasicInfo: GroupBasicInfo): Promise
     const userRoomId = getUserRoomId(groupBasicInfo.ownerId);
     io.in(userRoomId).socketsJoin(groupRoomId);
   }
+  return groupBasicInfo;
 }
 
 export async function handleSendGroupMessage(message: Message): Promise<Message> {

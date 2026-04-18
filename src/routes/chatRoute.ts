@@ -7,7 +7,7 @@ import {
   syncMessageStatus,
   searchUserResult,
   getGroupSeqNum,
-  createGruop,
+  createGroup,
   sendGroupMessage,
   syncGroupChatMessages,
   joinGroup,
@@ -29,7 +29,7 @@ router.post("/searchUserResult", searchUserResult);
 
 router.post("/getGroupSeqNum", getGroupSeqNum);
 
-router.post("/createGruop", createGruop);
+router.post("/createGroup", createGroup);
 
 router.post("/sendGroupMessage", sendGroupMessage);
 

@@ -25,8 +25,8 @@ export const authMiddleware = (req: AuthRequest, _res: Response, next: NextFunct
     next();
   } catch (err: unknown) {
     if (err instanceof TokenExpiredError) {
-      return next(new Error(AT_EXPIRE));
+      return next(new AppError(500, AT_EXPIRE));
     }
-    next(new Error("invalid_token"));
+    next(new AppError(500, "invalid_token"));
   }
 };
