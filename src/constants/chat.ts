@@ -7,7 +7,7 @@ export const MESSAGE_STATUS = {
 } as const;
 
 export const MESSAGE_TYPE = {
-  TEXT: "text",
+  text: "text",
 } as const;
 
 export type MessageStatus = (typeof MESSAGE_STATUS)[keyof typeof MESSAGE_STATUS];

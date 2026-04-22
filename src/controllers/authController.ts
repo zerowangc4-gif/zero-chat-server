@@ -9,13 +9,13 @@ import { redis } from "@/config";
 
 export const registerAndLogin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { address, publicKey, username, signature } = req.body;
+    const { address, publicKey, name, signature } = req.body;
 
-    if (!address || !publicKey || !username || !signature) {
+    if (!address || !publicKey || !name || !signature) {
       throw new AppError(400, "Missing required parameters");
     }
 
-    const result = await handleRegisterAndLogin(address, publicKey, username, signature);
+    const result = await handleRegisterAndLogin(address, publicKey, name, signature);
 
     res.status(200).json({
       success: true,

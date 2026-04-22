@@ -7,7 +7,7 @@ import { UserInfo } from "@/socket";
 export async function handleRegisterAndLogin(
   address: string,
   publicKey: string,
-  username: string,
+  name: string,
   signature: string,
 ) {
   const secret = process.env.JWT_SECRET;
@@ -44,7 +44,7 @@ export async function handleRegisterAndLogin(
   let userInfo: UserInfo = {
     address: address,
     publicKey: publicKey,
-    username: username,
+    name: name,
     avatarSeed: publicKey,
   };
 
