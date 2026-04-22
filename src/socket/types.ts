@@ -1,11 +1,39 @@
 import { ExtendedError, Socket } from "socket.io";
 import { MessageStatus, MessageType } from "@/constants";
 
+export type NextFunction = (err?: ExtendedError) => void;
+
+export interface SocketType extends Socket {
+  userId?: string;
+}
+
+export interface UserInfoType {
+  address: string;
+}
+
+export interface UserInfo {
+  address: string;
+  publicKey: string;
+  name: string;
+  avatarSeed: string;
+}
+
+export interface GroupBasicInfo {
+  seqNum: number;
+  ownerId: string;
+  address: string;
+  publicKey: string;
+  name: string;
+  avatarSeed: string;
+  groupIntro: string;
+  timestamp: number;
+}
+
 interface TextContent {
   text: string;
 }
 
-type ContentType = TextContent;
+type ContentType = TextContent | GroupBasicInfo;
 
 export enum ChatType {
   SINGLE = "single",
@@ -21,33 +49,6 @@ export interface Message {
   timestamp: number;
   type: MessageType;
   status: MessageStatus;
-}
-export type NextFunction = (err?: ExtendedError) => void;
-
-export interface SocketType extends Socket {
-  userId?: string;
-}
-
-export interface UserInfoType {
-  address: string;
-}
-
-export interface UserInfo {
-  address: string;
-  publicKey: string;
-  username: string;
-  avatarSeed: string;
-}
-
-export interface GroupBasicInfo {
-  seqNum: number;
-  ownerId: string;
-  address: string;
-  publicKey: string;
-  groupName: string;
-  avatarSeed: string;
-  groupIntro: string;
-  timestamp: number;
 }
 
 export interface TargetMsg {

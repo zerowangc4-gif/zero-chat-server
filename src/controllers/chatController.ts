@@ -209,7 +209,7 @@ export const getGroupSeqNum = catchAsync(
 // 创建群组
 export const createGroup = catchAsync(
   async (req: AuthRequest, res: Response, _next: NextFunction) => {
-    const { seqNum, ownerId, address, publicKey, groupName, avatarSeed, groupIntro, timestamp } =
+    const { seqNum, ownerId, address, publicKey, name, avatarSeed, groupIntro, timestamp } =
       req.body;
 
     if (
@@ -217,7 +217,7 @@ export const createGroup = catchAsync(
       !ownerId ||
       !address ||
       !publicKey ||
-      !groupName ||
+      !name ||
       !avatarSeed ||
       !groupIntro ||
       !timestamp ||
@@ -230,7 +230,7 @@ export const createGroup = catchAsync(
       ownerId: req.address,
       address,
       publicKey,
-      groupName,
+      name,
       avatarSeed,
       groupIntro,
       timestamp,
