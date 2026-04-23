@@ -94,7 +94,7 @@ export const deleteHavedSyncMessages = catchAsync(
     const message = {
       id,
       fromId,
-      toId: req.address,
+      toId,
       sessionSeqNum,
       content,
       timestamp,
@@ -307,7 +307,7 @@ export const syncGroupChatMessages = catchAsync(
 export const joinGroup = catchAsync(
   async (req: AuthRequest, res: Response, _next: NextFunction) => {
     const { groupId } = req.body;
-    if (!req.address || groupId) {
+    if (!req.address || !groupId) {
       throw new AppError(400, "Missing required parameters");
     }
     const { activeChatId } = req.body;
