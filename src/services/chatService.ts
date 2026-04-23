@@ -94,10 +94,21 @@ export async function handleDeleteHavedSyncMessages(
 ): Promise<void> {
   const userOfflineMessageKey = getUserOfflineMessageKey(address);
 
-  const score = await redis.zScore(userOfflineMessageKey, JSON.stringify(message));
+  const groupOfflineMessageKey = getGroupOfflineMessageKey(address);
 
-  if (score !== null) {
-    await redis.zRemRangeByScore(userOfflineMessageKey, 0, score);
+  const messageJson = JSON.stringify(message);
+
+  const userMessageScore = await redis.zScore(userOfflineMessageKey, messageJson);
+
+  const groupMessageScore = await redis.zScore(groupOfflineMessageKey, messageJson);
+
+  if (groupMessageScore !== null) {
+    await redis.zRemRangeByScore(groupOfflineMessageKey, 0, groupMessageScore);
+    return;
+  }
+
+  if (userMessageScore !== null) {
+    await redis.zRemRangeByScore(userOfflineMessageKey, 0, userMessageScore);
   }
 }
 export async function handleSyncHavedReadLatestMessage(
@@ -197,7 +208,7 @@ export async function handleSendGroupMessage(message: Message): Promise<Message>
 
   if (io) {
     const groupRoomId = getGroupRoomId(message.toId);
-    io.to(groupRoomId).emit(EVENT.chat.groupChatMessage, message);
+    io.to(groupRoomId).emit(EVENT.chat.groupChatMessage);
   }
 
   return message;
