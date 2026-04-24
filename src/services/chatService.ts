@@ -117,13 +117,16 @@ export async function handleSyncHavedReadLatestMessage(
 ): Promise<Message> {
   message.status = MESSAGE_STATUS.READ;
   const userMessageStatusKey = getUserMessageStatusKey(message.fromId);
-  await redis.hSet(userMessageStatusKey, message.toId, JSON.stringify(message));
+
   const targetMsg: TargetMsg = {
     chatId: message.toId,
     id: message.id,
     sessionSeqNum: parseInt(String(message.sessionSeqNum), 10),
     status: message.status,
   };
+
+  await redis.hSet(userMessageStatusKey, message.toId, JSON.stringify(targetMsg));
+
   if (io) {
     const userRoomId = getUserRoomId(message.fromId);
     io.to(userRoomId).emit(EVENT.chat.syncMessageStatus, targetMsg);
