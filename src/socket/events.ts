@@ -11,4 +11,7 @@ export const EVENT = {
     groupChatMessage: "group_chat_message",
     syncMessageStatus: "sync_message_status",
   },
+  user: {
+    updateFriendInfo: "update_friendInfo",
+  },
 };
