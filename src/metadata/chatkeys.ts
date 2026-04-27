@@ -36,10 +36,14 @@ export function getUserOfflineMessageKey(userId: string): string {
 export function getGroupOfflineMessageKey(userId: string): string {
   return `zeroChat:offlineMessage:group:${userId}`;
 }
+//我所有好友键值
+export function getMyFriendsKey(userId: string): string {
+  return `zeroChat:myJoinGroups:user:${userId}`;
+}
 
 //我加入的所有群
 export function getMyJoinGroupsKey(userId: string): string {
-  return `zeroChat:myJoinGroups:user:${userId}`;
+  return `zeroChat:myFriends:user:${userId}`;
 }
 
 //我创建的所有群
