@@ -7,6 +7,6 @@ router.post("/addFriends", addFriends);
 
 router.post("/updateUserInfo", updateUserInfo);
 
-router.post("/updateUserInfo", getAllFriendInfo);
+router.post("/getAllFriendInfo", getAllFriendInfo);
 
 export default router;
