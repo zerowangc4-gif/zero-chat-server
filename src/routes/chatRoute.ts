@@ -11,6 +11,7 @@ import {
   sendGroupMessage,
   syncGroupChatMessages,
   joinGroup,
+  getGroupAllInfo,
 } from "@/controllers";
 
 const router = Router();
@@ -36,5 +37,7 @@ router.post("/sendGroupMessage", sendGroupMessage);
 router.post("/syncGroupChatMessages", syncGroupChatMessages);
 
 router.post("/joinGroup", joinGroup);
+
+router.post("/getGroupAllInfo", getGroupAllInfo);
 
 export default router;

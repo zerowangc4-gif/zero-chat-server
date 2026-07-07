@@ -11,6 +11,7 @@ import {
   handleSendGroupMessage,
   handleSyncGroupChatMessages,
   handleJoinGroup,
+  handleGetGroupAllInfo,
 } from "@/services";
 import { getLastGroupSeqNum } from "@/metadata";
 import { AppError, AuthRequest } from "@/types";
@@ -317,6 +318,24 @@ export const joinGroup = catchAsync(
     res.status(200).json({
       success: true,
       message: "join group successful",
+      data: result,
+    });
+  },
+);
+
+//获取群所有信息
+export const getGroupAllInfo = catchAsync(
+  async (req: AuthRequest, res: Response, _next: NextFunction) => {
+    const { groupId, ownerId } = req.body;
+    if (!req.address || !groupId || !ownerId) {
+      throw new AppError(400, "Missing required parameters");
+    }
+
+    const result = await handleGetGroupAllInfo(groupId, ownerId);
+
+    res.status(200).json({
+      success: true,
+      message: "get groupInfo successful",
       data: result,
     });
   },

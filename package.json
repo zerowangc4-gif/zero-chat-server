@@ -21,6 +21,8 @@
   },
   "homepage": "https://github.com/zerowangc4-gif/zero-chat-server#readme",
   "dependencies": {
+    "@langchain/core": "^1.1.42",
+    "@langchain/openai": "^1.4.5",
     "@socket.io/redis-adapter": "^8.3.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
