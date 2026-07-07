@@ -29,6 +29,12 @@ export interface GroupBasicInfo {
   timestamp: number;
 }
 
+export interface GroupAllInfo {
+  Owner: UserInfo;
+  groupMembers: UserInfo[];
+  groupOwnerMembers: UserInfo[];
+}
+
 interface TextContent {
   text: string;
 }

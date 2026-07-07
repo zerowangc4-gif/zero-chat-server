@@ -18,7 +18,7 @@ import {
   DISTRIBUTE_LUA,
 } from "@/metadata";
 import { MESSAGE_STATUS } from "@/constants";
-import { Message, GroupBasicInfo, io, EVENT, TargetMsg, UserInfo } from "@/socket";
+import { Message, GroupBasicInfo, io, EVENT, TargetMsg, UserInfo, GroupAllInfo } from "@/socket";
 import { AppError } from "@/types";
 
 export async function handleSendMessage(address: string, message: Message): Promise<Message> {
@@ -286,4 +286,48 @@ export async function handleJoinGroup(address: string, groupId: string): Promise
   }
 
   return groupBasicInfo;
+}
+
+export async function handleGetGroupAllInfo(
+  groupId: string,
+  ownerId: string,
+): Promise<GroupAllInfo> {
+  const usersKey = getAllUsersKey();
+  const groupMemberKey = getGroupMemberKey(groupId);
+  const groupOwnerMemberKey = getGroupOwnerMemberKey(groupId);
+
+  const [groupMemberIds, groupOwnerMemberIds] = await Promise.all([
+    redis.hKeys(groupMemberKey),
+    redis.hKeys(groupOwnerMemberKey),
+  ]);
+
+  const [groupMemberInfoJson, groupOwnerMemberInfoJson, ownerJson] = await Promise.all([
+    redis.hmGet(usersKey, groupMemberIds),
+    redis.hmGet(usersKey, groupOwnerMemberIds),
+    redis.hGet(usersKey, ownerId),
+  ]);
+
+  const groupMembers: UserInfo[] = [];
+
+  const groupOwnerMembers: UserInfo[] = [];
+
+  groupMemberInfoJson.forEach(item => {
+    if (item) {
+      groupMembers.push(JSON.parse(item));
+    }
+  });
+
+  groupOwnerMemberInfoJson.forEach(item => {
+    if (item) {
+      groupOwnerMembers.push(JSON.parse(item));
+    }
+  });
+
+  const Owner: UserInfo = JSON.parse(ownerJson as string);
+
+  return {
+    Owner,
+    groupOwnerMembers,
+    groupMembers,
+  };
 }
