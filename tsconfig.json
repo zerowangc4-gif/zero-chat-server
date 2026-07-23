@@ -1,26 +1,14 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "module":"nodenext",
+    "moduleResolution": "nodenext",
     "rootDir": "./src",
     "outDir": "./dist",
-    "types": ["node"],
     "paths": {
       "@/*": ["./src/*"]
     },
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-    "strict": true,
-    "noUncheckedIndexedAccess": false,
-    "exactOptionalPropertyTypes": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    // Set to false to avoid 'import type' requirements for interface/type declarations
-    "verbatimModuleSyntax": false,
-    "isolatedModules": true,
-    "moduleDetection": "force"
+    "strict": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.test.ts"]
